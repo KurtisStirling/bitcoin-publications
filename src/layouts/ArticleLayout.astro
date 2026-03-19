@@ -1,0 +1,37 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  date: string;
+  tags?: string[];
+  type?: string;
+  description?: string;
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { title, subtitle, date, tags = [], type, description, headings } = Astro.props;
+---
+
+<BaseLayout title={`${title} — Kurtis Stirling`} description={description}>
+  <article>
+    <header class="article-header">
+      <h1>{title}</h1>
+      {subtitle && <p style="font-size: 1.15rem; color: var(--text-muted); margin-top: -0.5rem;">{subtitle}</p>}
+      <div class="article-meta">
+        <span>{date}</span>
+        {type && <span class="tag">{type}</span>}
+        {tags.map(tag => <span class="tag">{tag}</span>)}
+      </div>
+    </header>
+
+    <div class="article-layout">
+      <div class="article-body">
+        <slot />
+      </div>
+      <TableOfContents headings={headings} />
+    </div>
+  </article>
+</BaseLayout>

@@ -1,0 +1,12 @@
+---
+const currentPath = Astro.url.pathname;
+---
+
+<nav class="site-nav">
+  <a href="/" class="site-name">Kurtis Stirling</a>
+  <ul class="nav-links">
+    <li><a href="/bitcoin/" class:list={[{ active: currentPath.startsWith('/bitcoin') }]}>Bitcoin</a></li>
+    <li><a href="/about/" class:list={[{ active: currentPath === '/about/' }]}>About</a></li>
+    <li><button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">Light/Dark</button></li>
+  </ul>
+</nav>
