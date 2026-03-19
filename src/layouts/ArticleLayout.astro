@@ -28,10 +28,10 @@ const { title, subtitle, date, tags = [], type, description, headings } = Astro.
     </header>
 
     <div class="article-layout">
+      <TableOfContents headings={headings} />
       <div class="article-body">
         <slot />
       </div>
-      <TableOfContents headings={headings} />
     </div>
   </article>
 </BaseLayout>

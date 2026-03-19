@@ -19,9 +19,57 @@ const filtered = headings.filter(h => h.depth >= 2 && h.depth <= 4);
     <ol>
       {filtered.map(h => (
         <li class={`depth-${h.depth}`}>
-          <a href={`#${h.slug}`}>{h.text}</a>
+          <a href={`#${h.slug}`} data-heading={h.slug}>{h.text}</a>
         </li>
       ))}
     </ol>
   </aside>
 )}
+
+<script>
+  function initTocHighlight() {
+    const links = document.querySelectorAll('.toc-sidebar a[data-heading]');
+    if (!links.length) return;
+
+    const slugs = Array.from(links).map(l => (l as HTMLAnchorElement).dataset.heading!);
+    const headings = slugs
+      .map(slug => document.getElementById(slug))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (!headings.length) return;
+
+    let current = slugs[0];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the topmost visible heading
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+        if (visible.length > 0) {
+          current = visible[0].target.id;
+        }
+
+        links.forEach(link => {
+          const anchor = link as HTMLAnchorElement;
+          if (anchor.dataset.heading === current) {
+            anchor.classList.add('active');
+          } else {
+            anchor.classList.remove('active');
+          }
+        });
+      },
+      {
+        rootMargin: '-64px 0px -75% 0px',
+        threshold: 0,
+      }
+    );
+
+    headings.forEach(h => observer.observe(h));
+  }
+
+  // Run on initial load and on Astro page transitions
+  initTocHighlight();
+  document.addEventListener('astro:after-swap', initTocHighlight);
+</script>
