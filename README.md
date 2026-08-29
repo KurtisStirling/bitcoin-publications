@@ -190,7 +190,7 @@ That makes a rapid return to very high consumer storage improvement rates hard t
 
 NAND still has technical room to scale. Manufacturers are moving toward much higher layer counts [\[5\]](#ref-5)[\[6\]](#ref-6)[\[7\]](#ref-7), and new storage paradigms may eventually reset the curve. But denser storage is not automatically cheap consumer storage. DNA, glass and ceramic systems are currently aimed at archival or data-centre use, not $300 home nodes [\[68\]](#ref-68)[\[69\]](#ref-69)[\[70\]](#ref-70)[\[71\]](#ref-71).
 
-The opposite error is possible too. Long technological forecasts routinely miss paradigm shifts. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[67\]](#ref-67), and forecasting research finds uncertainty widening rapidly with horizon [\[63\]](#ref-63)[\[64\]](#ref-64).
+The opposite error is possible too. Long technological forecasts routinely miss paradigm shifts. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[66\]](#ref-66)[\[67\]](#ref-67), and forecasting research finds uncertainty widening rapidly with horizon [\[63\]](#ref-63)[\[64\]](#ref-64).
 
 ### The long-term result depends on one uncertain variable
 
@@ -199,6 +199,8 @@ The opposite error is possible too. Long technological forecasts routinely miss 
 *The cross-generational view: stepped capacity, one purchase every ten years, against linear chain growth. Model: [`models/storage/charts.py`](models/storage/charts.py).*
 
 At roughly **10% annual storage improvement**, capacity growth eventually pulls away from linear blockchain growth and each replacement cycle gains headroom. At 5% or below, that separation weakens and the current chain-growth trajectory can become unsustainable after a small number of hardware generations.
+
+For the first cycle the sources converge. Rosenthal's long-term storage model [\[72\]](#ref-72), the IEEE roadmap [\[68\]](#ref-68) and Wikibon's Wright's Law analysis [\[65\]](#ref-65) all land in the 8 to 12% range, with the 10% base case in the middle.
 
 This is the cleanest way to state the forecast:
 
@@ -233,7 +235,7 @@ On the N100 reference machine, IBD processing is dominated by the historical Ass
 
 The processing ceiling lands around **116–117 GB/year** on static hardware, only slightly above the 111 GB/year storage ceiling. With modest software improvement it moves much further out. In either case, the reference disk fills before processing time becomes the binding problem.
 
-This constraint also has active mitigations. AssumeUTXO is already in Bitcoin Core and can reduce time-to-usable to hours by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than as requirements for the storage result.
+This constraint also has active mitigations. AssumeUTXO is already in Bitcoin Core and can reduce time-to-usable to hours by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than as requirements for the storage result. Past software optimisation has been essential to keeping IBD tractable, and the rate of that improvement has slowed [\[23\]](#ref-23).
 
 ### 6.3 UTXO set and RAM
 
@@ -325,11 +327,13 @@ That objection weakens the first-cycle result but not the broader method. Whatev
 
 ## 10. Related work
 
+The tension between block space cost and decentralisation is well recognised [\[53\]](#ref-53)[\[54\]](#ref-54)[\[55\]](#ref-55). This paper tries to put numbers on where it starts to bind.
+
 Gencer et al. [\[59\]](#ref-59) measured Bitcoin and Ethereum decentralisation through bandwidth, latency, geography and mining concentration. This paper focuses on a different layer of the problem: the resource burden on the individual node operator and how that burden changes over time.
 
-Wu's 2014–2025 infrastructure-resilience work looks at network-level health, while this analysis asks what hardware conditions would cause nodes to stop joining or remaining archival.
+Wu's 2014–2025 infrastructure-resilience work [arXiv:2602.14372] looks at network-level health, while this analysis asks what hardware conditions would cause nodes to stop joining or remaining archival.
 
-Croman et al. identified throughput and bootstrap time as fundamental resource constraints in decentralised blockchains. Their constraint-based framing is close to the approach here, but predates both inscriptions and the recent reversal in NAND pricing.
+Croman et al. [FC 2016] identified throughput and bootstrap time as fundamental resource constraints in decentralised blockchains. Their constraint-based framing is close to the approach here, but predates both inscriptions and the recent reversal in NAND pricing.
 
 Kiffer et al. [\[60\]](#ref-60) provide the geographic node measurements used to bound the metered-bandwidth argument in Section 7.
 
@@ -355,24 +359,24 @@ Ranked by evidence type: on-chain measurement, controlled benchmark, observed ma
 
 | Input | Evidence type | Refs | Status |
 |---|---|---|---|
-| Chain size (724 GB, March 2026) | On-chain measurement | [25], [61] | Established |
-| Chainstate (11 GB, 169M entries) | On-chain measurement | [24] | Established |
-| Bytes per UTXO entry (63) | On-chain measurement | [24] | Established |
-| Block size and inscription impact | On-chain measurement | [38], [39], [40] | Established |
-| OP_RETURN data trends | On-chain measurement | [41] | Established |
-| UTXO composition and growth | On-chain measurement | [24], [45], [46], [47] | Established |
-| IBD rate (12 GB/hr, N100) | Controlled benchmark | [42] | Established |
-| Node density (archival vs pruned) | Network observation | [58], [61] | Established |
-| Target hardware ($300) | Observed market data | [49], [60] | **Contested (medium)** |
-| Upgrade cycle (10 years) | Market data + inference | [50], [51], [52] | **Contested (medium)** |
-| SSD cost trend and improvement rates | Observed market data | [17], [18], [19], [34] | Established |
-| SSD price reversal (2023–2026) | Observed market data | [4], [18], [31] | Established |
-| Residential bandwidth trends | Observed market data | [48] | Established |
-| HDD S-curve deceleration | Market data (historical) | [8], [9], [10], [11] | Established |
-| Kryder's Law breakdown | Market data (historical) | [13], [14], [15], [16] | Established |
-| NAND oligopoly coordination | Observed market data | [20], [21], [22] | Established |
-| NAND scaling outlook | Industry forecast | [5], [6], [7], [12] | Established trend, contested timeline |
-| AI NAND shortage (2025–2028) | Industry forecast | [3], [31], [32], [34], [36], [37] | Established now, contested duration |
+| Chain size (724 GB, March 2026) | On-chain measurement | [\[25\]](#ref-25), [\[61\]](#ref-61) | Established |
+| Chainstate (11 GB, 169M entries) | On-chain measurement | [\[24\]](#ref-24) | Established |
+| Bytes per UTXO entry (63) | On-chain measurement | [\[24\]](#ref-24) | Established |
+| Block size and inscription impact | On-chain measurement | [\[38\]](#ref-38), [\[39\]](#ref-39), [\[40\]](#ref-40) | Established |
+| OP_RETURN data trends | On-chain measurement | [\[41\]](#ref-41) | Established |
+| UTXO composition and growth | On-chain measurement | [\[24\]](#ref-24), [\[45\]](#ref-45), [\[46\]](#ref-46), [\[47\]](#ref-47) | Established |
+| IBD rate (12 GB/hr, N100) | Controlled benchmark | [\[42\]](#ref-42) | Established |
+| Node density (archival vs pruned) | Network observation | [\[58\]](#ref-58), [\[61\]](#ref-61) | Established |
+| Target hardware ($300) | Observed market data | [\[49\]](#ref-49), [\[50\]](#ref-50) | **Contested (medium)** |
+| Upgrade cycle (10 years) | Market data + inference | [\[50\]](#ref-50), [\[51\]](#ref-51), [\[52\]](#ref-52) | **Contested (medium)** |
+| SSD cost trend and improvement rates | Observed market data | [\[17\]](#ref-17), [\[18\]](#ref-18), [\[19\]](#ref-19), [\[34\]](#ref-34) | Established |
+| SSD price reversal (2023–2026) | Observed market data | [\[4\]](#ref-4), [\[18\]](#ref-18), [\[31\]](#ref-31) | Established |
+| Residential bandwidth trends | Observed market data | [\[48\]](#ref-48) | Established |
+| HDD S-curve deceleration | Market data (historical) | [\[8\]](#ref-8), [\[9\]](#ref-9), [\[10\]](#ref-10), [\[11\]](#ref-11) | Established |
+| Kryder's Law breakdown | Market data (historical) | [\[13\]](#ref-13), [\[14\]](#ref-14), [\[15\]](#ref-15), [\[16\]](#ref-16) | Established |
+| NAND oligopoly coordination | Observed market data | [\[20\]](#ref-20), [\[21\]](#ref-21), [\[22\]](#ref-22) | Established |
+| NAND scaling outlook | Industry forecast | [\[5\]](#ref-5), [\[6\]](#ref-6), [\[7\]](#ref-7), [\[12\]](#ref-12) | Established trend, contested timeline |
+| AI NAND shortage (2025–2028) | Industry forecast | [\[3\]](#ref-3), [\[31\]](#ref-31), [\[32\]](#ref-32), [\[34\]](#ref-34), [\[36\]](#ref-36), [\[37\]](#ref-37) | Established now, contested duration |
 | Metered bandwidth costs | Observed market data | ITU 2024, Cable.co.uk | **Not modelled** |
 
 The 111 GB/year ceiling rests on current measurements and arithmetic. The claim that later hardware generations gain headroom depends much more heavily on future storage improvement. If the storage forecast is wrong, the multi-generation conclusion moves while the first-cycle ceiling remains.
@@ -428,7 +432,7 @@ block size = 250 + *N* × (199 + *D*) bytes
 | All images | 21 KB | ~186 | ~3.95 MB |
 | Single inscription (Slipstream) | ~4 MB | 1 | ~4.0 MB |
 
-BRC-20 mints remain relatively small even when a block is full by weight because transaction overhead is large relative to their payload. Images use the weight budget more efficiently as stored bytes. At the observed inscription peak, roughly 10% of inscriptions were images by count. Raising that mix to about 27% produces the 3.82 MB sustained data-heavy scenario. Inscription-size evidence is in [40].
+BRC-20 mints remain relatively small even when a block is full by weight because transaction overhead is large relative to their payload. Images use the weight budget more efficiently as stored bytes. At the observed inscription peak, roughly 10% of inscriptions were images by count. Raising that mix to about 27% produces the 3.82 MB sustained data-heavy scenario. Inscription-size evidence is in [\[40\]](#ref-40).
 
 ### C.2 Storage sensitivity to average block size
 
