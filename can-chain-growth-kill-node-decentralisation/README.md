@@ -10,15 +10,17 @@ All models are standalone Python and live in [`models/`](models). Every modelled
 
 ## Summary
 
-Bitcoin's security depends on people independently verifying the chain. If doing that requires increasingly expensive or frequently replaced hardware, fewer people will run nodes and the validator set becomes easier to concentrate or coerce.
+Bitcoin depends on people independently verifying the chain. If doing that requires increasingly expensive hardware or frequent upgrades, fewer people may keep running nodes, making the validator population easier to concentrate or coerce.
 
-I modelled four hardware constraints against a deliberately cheap target: a **$300 node with a ten-year service life**. Storage is the constraint that binds.
+I modelled four hardware constraints against a deliberately cheap target: a **$300 archival node with a ten-year service life**. Storage binds first. A 2 TB SSD in the reference machine has room for about **111 GB of chain growth per year** over ten years. The observed trajectory since 2023 is roughly **80 GB/year**. Today's 1.69 MB average block implies about **87 GB/year**, while the ten-year ceiling is crossed at 2.16 MB. March 2024 briefly averaged 2.29 MB, equivalent to about **118 GB/year**. A sustained data-heavy mix averaging 3.82 MB would grow the chain by about **196 GB/year** and fill the reference disk in roughly **5.7 years**.
 
-A 2 TB SSD in the reference machine has room for about **111 GB of chain growth per year** over ten years. The observed trajectory since 2023 is about **80 GB/year**, so it passes. The current average block size of 1.69 MB corresponds to about **87 GB/year**. The ceiling breaks at **2.16 MB average blocks**, only 28% above today's average, and Bitcoin has already briefly exceeded it: March 2024 averaged 2.29 MB, equivalent to **118 GB/year**.
+That makes the next hardware cycle less comfortable than the historical trend suggests. It does not mean the storage burden accelerates without limit.
 
-A sustained data-heavy mix averaging 3.82 MB per block would grow the chain by about **196 GB/year** and fill the reference disk in roughly **5.7 years**.
+Under the current consensus rules, block weight is limited to 4 million weight units and difficulty targets a roughly ten-minute block interval. At that cadence, even blocks near the maximum witness-heavy size imply chain growth of roughly **205 GB/year**. The exact number of blocks in a calendar year varies, so this is not a literal annual protocol ceiling. The important point is the shape of the problem: unless the block-weight regime changes, sustained chain growth is constrained to be roughly linear rather than exponential.
 
-The longer-term picture is less alarming. Chain growth is linear while storage capacity per dollar can compound, so later hardware generations gain headroom if consumer storage keeps improving at anything close to its historical post-2014 rate. That is the main uncertainty in the paper. The first ten-year ceiling is arithmetic; the multi-generation forecast is not.
+A fixed growth rate changes the long-run question. Each hardware generation has to absorb another fixed quantity of chain history. The disk required therefore grows roughly linearly, while storage capacity per dollar can improve multiplicatively. If storage keeps improving at a persistent positive rate, capacity eventually pulls away from chain growth. If improvement stalls, reverses, or decays toward zero quickly enough, it may not. The paper's long-range storage scenarios still matter for that reason.
+
+So the result is conditional rather than absolute. **Chain growth under today's rules does not create an inherently accelerating hardware spiral, and the base storage scenario gains headroom over time. But the first hardware cycles can still force upgrades or pruning, and this paper does not model enough of the cost-to-node-count relationship to prove that chain growth could never contribute to severe centralisation.**
 
 This paper does not propose a protocol change.
 
@@ -27,16 +29,14 @@ This paper does not propose a protocol change.
 ## Contents
 
 - [1. The question](#1-the-question)
-- [2. What running a node actually costs](#2-what-running-a-node-actually-costs)
-- [3. Method](#3-method)
-- [4. Storage is the binding constraint](#4-storage-is-the-binding-constraint)
-- [5. How much to trust the storage forecast](#5-how-much-to-trust-the-storage-forecast)
-- [6. The other constraints do not bind](#6-the-other-constraints-do-not-bind)
-- [7. Affordability and decentralisation are different questions](#7-affordability-and-decentralisation-are-different-questions)
-- [8. What would change the findings](#8-what-would-change-the-findings)
-- [9. Objections](#9-objections)
-- [10. Related work](#10-related-work)
-- [11. Conclusion](#11-conclusion)
+- [2. Method](#2-method)
+- [3. Storage binds first](#3-storage-binds-first)
+- [4. What bounded block growth changes](#4-what-bounded-block-growth-changes)
+- [5. The other constraints](#5-the-other-constraints)
+- [6. Affordability, pruning and decentralisation](#6-affordability-pruning-and-decentralisation)
+- [7. What would change the result](#7-what-would-change-the-result)
+- [8. Related work](#8-related-work)
+- [9. Conclusion](#9-conclusion)
 - [Appendix A: evidence chain](#appendix-a-evidence-chain)
 - [Appendix B: models](#appendix-b-models)
 - [Appendix C: supplementary calculations](#appendix-c-supplementary-calculations)
@@ -46,23 +46,17 @@ This paper does not propose a protocol change.
 
 ## 1. The question
 
-A bigger blockchain needs more storage and takes longer to download and validate. The useful question is not whether those costs rise, but whether they rise fast enough to force enough operators out that Bitcoin's validator set becomes easier to enumerate, target or coerce.
+How quickly can Bitcoin's chain grow before running a cheap full node becomes materially harder?
 
-I do not try to determine how many nodes are "enough". This paper measures the other half of the problem: how quickly the hardware burden is changing, which resource becomes limiting first, and whether chain growth is on a trajectory that repeatedly forces operators to upgrade.
-
-The answer is more reassuring over decades than it is over the next hardware cycle. Storage capacity per dollar can compound while the blockchain adds a roughly fixed number of gigabytes each year. If storage keeps improving, each replacement machine starts with more headroom than the one before it. But a ten-year device can still hit its limit before that compounding benefit arrives.
-
-That failure can be quiet. An operator whose disk fills can prune rather than upgrade. Their node continues validating, but it stops retaining and serving the historical chain. Nothing visibly breaks, yet the network loses an archival peer that future nodes can bootstrap from.
-
-### What this paper measures
-
-The decentralisation claim here is about the validator population, not universal access to node ownership. A network can be expensive to join and still be difficult to coerce if enough validators remain across enough jurisdictions. It can also be cheap to join but concentrated in a small number of places.
-
-The causal chain tested here is:
+A bigger chain needs more storage and takes longer to download and validate. Those costs matter only if they rise fast enough to change who can keep operating a node. The causal chain this paper tests is:
 
 **chain growth → node cost and upgrade pressure → fewer nodes → greater concentration → easier capture or coercion**
 
-Section 7 deals separately with affordability in regions where the $300 hardware target or flat-rate broadband assumption does not hold.
+I do not try to determine how many nodes are "enough" for decentralisation. The narrower question is whether chain growth is pushing the hardware burden toward repeated failure: which resource binds first, how close cheap hardware is to that limit, and whether the pressure worsens across hardware generations.
+
+The distinction matters because the near-term and long-term answers are different. A 2 TB node bought today has limited headroom if blocks become more data-heavy. Over longer periods, however, the current block-weight regime constrains how quickly the chain can grow. That turns the storage problem into a race between roughly linear chain growth and the future capacity of cheap storage.
+
+An operator whose disk fills has three practical choices: upgrade, prune, or stop running the node. Pruning preserves validation but stops the node retaining and serving the full historical chain. The network can therefore lose archival capacity without an obvious failure in headline node counts.
 
 Satoshi identified the underlying tension early:
 
@@ -70,46 +64,30 @@ Satoshi identified the underlying tension early:
 >
 > – Satoshi Nakamoto, 10 December 2010 [\[2\]](#ref-2)
 
-The central result is that **storage is the only constraint examined that is both operationally critical and irreversible**. The chain never shrinks, and no deployed protocol mechanism substantially reduces the archival storage requirement.
-
 ---
 
-## 2. What running a node actually costs
+## 2. Method
 
-Bitcoin was specified as "a purely peer-to-peer version of electronic cash" whose security rests on participants verifying transactions themselves rather than trusting an intermediary [\[1\]](#ref-1). A full node does that by validating every block and transaction against the consensus rules.
+### A cheap node should last
 
-An **archival node** keeps the entire blockchain, currently about 724 GB. A **pruned node** validates the same history but discards old block data afterwards, usually keeping around 10–15 GB. Pruning reduces the operator's storage requirement, but it does not remove the network's need for archival peers: a new node still needs to obtain the full history before it can validate and discard it. Nothing in the protocol guarantees a minimum archival population.
+A node being affordable on the day it is bought is not enough if chain growth forces a replacement a few years later. I therefore use **service life** as the main test.
 
-The **UTXO set** is the set of currently spendable outputs. It contains about 169 million entries and occupies about 11 GB. Keeping more of it in RAM speeds validation, especially during initial sync, but it does not need to fit entirely in memory for a node to function.
+The Raspberry Pi 4 is a useful empirical example. It was widely recommended for budget nodes around 2022, but by 2025 Bitcoin workloads were moving toward N100/N150-class hardware as IBD times stretched and memory became restrictive [\[49\]](#ref-49)[\[50\]](#ref-50)[\[51\]](#ref-51)[\[52\]](#ref-52).
 
-**Initial block download (IBD)** is the first sync from genesis. On the class of hardware used here it currently takes days, not hours.
+I use a **ten-year target**. That is deliberately demanding for consumer hardware, but reasonable as a stress test for a single-purpose appliance. Section 7 shows the effect of shorter replacement cycles.
 
-One detail matters particularly for storage. Bitcoin limits blocks by **weight**, not simply by bytes. Non-witness data costs four weight units per byte, while witness data costs one. A full block of ordinary monetary transactions is therefore much smaller on disk than a full block dominated by witness-heavy data such as inscriptions. Once blocks are full by weight, transaction mix becomes the main lever on chain growth.
+### Reference hardware
 
----
-
-## 3. Method
-
-### Upgrade frequency is the metric
-
-A node being affordable today says little about decentralisation if it has to be replaced every few years. Repeated forced upgrades create churn, so I use **service life** rather than snapshot purchase price as the main test.
-
-The Raspberry Pi 4 is a useful empirical anchor. It was widely recommended for budget nodes around 2022, but by 2025 the platform was effectively being abandoned for Bitcoin workloads as IBD times stretched beyond a week, RAM became restrictive, and pre-built vendors moved to N100/N150 hardware [\[49\]](#ref-49)[\[50\]](#ref-50)[\[51\]](#ref-51)[\[52\]](#ref-52).
-
-I use a **ten-year target**. That is deliberately demanding: consumer PCs are commonly replaced sooner, but a single-purpose appliance with no moving parts should not need the same replacement cycle as a general-purpose computer. Section 8 shows how the result changes at seven and eight years.
-
-### Reference hardware: $300
-
-Current node hardware spans roughly $200–400 at the low end. DIY systems can sit near $200–270, while pre-built products commonly cost $399–599. I use **$300** as a conservative minimum viable configuration rather than as the median operator budget.
-
-The reference machine is an N100 mini-PC with:
+The reference machine is a **$300 N100 mini-PC** with:
 
 - 2 TB NVMe SSD
 - 16 GB RAM
 - roughly 12 GB/hour observed IBD processing
 - about 1,850 GB of usable storage after filesystem reservation, OS, swap and logs
 
-A higher budget substantially relaxes the storage result. That is intentional: if the analysis finds adequate headroom at $300, more expensive configurations have more.
+The price is a low-end target, not a claim about the median operator. DIY systems can sit around $200–270, while pre-built nodes commonly cost $399–599.
+
+An **archival node** keeps the full blockchain, currently about 724 GB. A **pruned node** validates the same history but discards old block data afterwards, usually retaining around 10–15 GB. The **UTXO set** contains currently spendable outputs and occupies about 11 GB. **Initial block download (IBD)** is the first validation pass from genesis.
 
 ### Four constraints
 
@@ -120,236 +98,199 @@ Each model asks how quickly the chain can grow before one resource breaches the 
 | **Storage** | Chain size that fits on the 2 TB SSD | **Binding** |
 | IBD processing | Chain processable within seven days | ~117 GB/year ceiling on static hardware |
 | Bandwidth speed | Chain downloadable within seven days | Not binding for most current residential broadband |
-| UTXO / RAM | Chainstate that can be cached in memory | Slows IBD as pressure rises, but does not stop operation |
+| UTXO / RAM | Chainstate that can be cached in memory | Performance pressure, not a hard operating cutoff |
 
-The distinction is important. Bandwidth and IBD mainly make it harder to **start** a node. UTXO pressure mainly changes performance. All three have credible paths to improvement through faster networks, software optimisation, more RAM or alternative chainstate designs.
-
-Storage accumulates while the node is already operating, and every byte added to the archival chain is permanent. That makes it the hardest constraint to recover from once the disk fills.
+Storage is different from the other three. It accumulates while the node is already running, and historical block data does not disappear. Bandwidth and IBD mainly affect how difficult it is to start or restart a node. UTXO pressure mainly changes performance.
 
 ---
 
-## 4. Storage is the binding constraint
+## 3. Storage binds first
+
+How much chain growth can a 2 TB node absorb before the ten-year target fails?
 
 ![Chain size against usable space on a 2 TB SSD, 2026–2036, for five growth scenarios](figures/fig-storage-nearterm.png)
 
 *The first hardware cycle. Markers show the year each scenario exhausts the disk. Model: [`models/storage/`](models/storage).*
 
-### 4.1 The ten-year ceiling is 111 GB/year
+### The ten-year ceiling is 111 GB/year
 
-A nominal 2 TB SSD provides 2,000 GB. After the deductions above, the reference machine has about 1,850 GB available. The blockchain and chainstate currently use roughly 735 GB, leaving about 1,115 GB. Allowing for modest chainstate growth leaves around 1,110 GB for additional blockchain data.
+A nominal 2 TB SSD provides 2,000 GB. After the deductions above, about 1,850 GB remains usable. The blockchain and chainstate currently occupy roughly 735 GB, leaving about 1,115 GB. Allowing for modest chainstate growth leaves around 1,110 GB for additional blockchain data.
 
-Spread across ten years, that produces a ceiling of **111 GB/year**. At eight years, the ceiling rises to about 139 GB/year.
+Across ten years, that is **111 GB/year**. At eight years the ceiling rises to about **139 GB/year**; at seven years, about **159 GB/year**.
 
-This is not a forecast. It is arithmetic from the chosen hardware, current chain size and service-life target. The uncertainty begins when we ask how quickly blocks will grow and what a replacement machine will cost later.
+This result is arithmetic from the chosen hardware, current chain size and service-life target. It does not depend on a storage-price forecast.
 
-### 4.2 The current margin is real, but small
+### Today's margin is small
 
-The observed trajectory since 2023 is roughly **80 GB/year**, below the ceiling. At today's 1.69 MB average block size, the implied annual rate is about **87 GB/year**.
+The observed trajectory since 2023 is roughly **80 GB/year**. Today's 1.69 MB average block implies about **87 GB/year**. Both fit inside the ten-year target.
 
-The ceiling is crossed at **2.16 MB average blocks**. That is only 28% above today's average. Bitcoin has already crossed that level temporarily: March 2024 averaged 2.29 MB, equivalent to about **118 GB/year**.
+The ceiling is crossed at **2.16 MB average blocks**, only 28% above today's average. March 2024 averaged 2.29 MB, equivalent to about **118 GB/year**, although the increase did not persist.
 
-Blocks have been effectively full by weight since January 2023, so future storage growth depends largely on what fills that weight. Average block size rose from 1.11 MB in 2022 to 1.69 MB, a 52% increase. Witness inscriptions drove much of that move [\[38\]](#ref-38)[\[39\]](#ref-39)[\[40\]](#ref-40). OP_RETURN use and direct submission to miners provide other routes for data-heavy transactions [\[41\]](#ref-41).
+Blocks have been effectively full by weight since January 2023, so transaction mix now matters more than transaction count for storage. Average block size rose from 1.11 MB in 2022 to 1.69 MB as witness-heavy inscriptions became a larger share of block space [\[38\]](#ref-38)[\[39\]](#ref-39)[\[40\]](#ref-40). OP_RETURN use and direct submission to miners provide other routes for data-heavy transactions [\[41\]](#ref-41).
 
-A sustained inscription-heavy mix averaging **3.82 MB** would grow the chain by about **196 GB/year**, filling the reference disk in roughly **5.7 years**. I use that as a plausible high-demand scenario rather than a theoretical maximum. Individual blocks can approach 4 MB, but sustaining an extreme across years is a different claim.
+A sustained inscription-heavy mix averaging **3.82 MB** would produce about **196 GB/year** of chain growth and fill the reference disk in roughly **5.7 years**. That is a deliberately aggressive demand scenario, not a forecast that blocks will remain that large for years.
 
-The detailed transaction-mix calculation and sensitivity table are in [Appendix C](#appendix-c-supplementary-calculations).
+The transaction-mix derivation, block-size sensitivity table and deliberate chain-filling costs are in [Appendix C](#appendix-c-supplementary-calculations). The main result does not need them: the current trajectory passes, a modest increase fails the ten-year target, and a sustained data-heavy regime fails it quickly.
 
-### 4.3 Deliberately filling the chain is expensive, not impossible
+### Pruning changes the failure mode
 
-At an illustrative 5 sat/vB and $100,000/BTC, sustaining just enough witness-heavy demand to hold average blocks at the 2.16 MB ceiling costs roughly **1,500 BTC, or $150 million per year**. Sustaining the 3.82 MB scenario costs roughly **2,628 BTC, or $263 million per year**.
+A pruned node is not constrained by a 2 TB archival disk in the same way. It still validates the historical chain during IBD, but discards old blocks afterwards.
 
-Those numbers are far outside ordinary spam economics, but they are not outside a state budget. More importantly, the March 2024 breach did not require an attacker. Commercial inscription demand alone briefly produced 118 GB/year.
-
-Relay and mempool policy can make some forms of flooding harder, but policy does not prevent miners from placing their own data in blocks or accepting transactions out of band. The full path and cost comparison is retained in Appendix C.
-
-### 4.4 Pruning does not remove the archival problem
-
-Pruned nodes are not directly constrained by a 2 TB archival disk because they keep only a small rolling window of block data. They still need the historical chain during IBD, and they need archival peers to supply it. A network made entirely of pruned nodes cannot bootstrap a new node from genesis.
-
-There is also no deployed storage equivalent of the mitigations available elsewhere. SeF proposes a coded archival architecture that could reduce per-node historical storage dramatically [\[62\]](#ref-62), but it is not deployed. For the period modelled here, archival chain storage remains cumulative.
+That makes pruning an effective response for the operator, not a complete answer for the network. New nodes still need archival peers from which to obtain history, and the protocol does not guarantee a minimum archival population. SeF proposes a coded archival architecture that could reduce per-node historical storage [\[62\]](#ref-62), but it is not deployed.
 
 ---
 
-## 5. How much to trust the storage forecast
+## 4. What bounded block growth changes
 
-The first-cycle result does not need a storage-price forecast. The multi-generation result does.
+The first-cycle result is uncomfortable. Does it keep getting worse forever?
+
+### The chain cannot grow arbitrarily fast under the current block-weight regime
+
+Bitcoin limits blocks by **weight**, not simply by serialized bytes. Witness data receives a lower weight cost than non-witness data, which is why a witness-heavy block can be much larger on disk than an ordinary monetary block. The consensus limit is 4 million weight units per block.
+
+At the protocol's target block cadence, a block near the theoretical witness-heavy size corresponds to roughly **205 GB/year** using the same conversion as the storage model. Real block production varies around the ten-minute target, so 205 GB/year should be read as a long-run upper envelope at target cadence rather than a literal calendar-year cap.
+
+That distinction does not change the structural result. With the weight limit unchanged, bytes added per block are bounded and block production is difficulty-regulated around a stable cadence. Sustained chain growth is therefore constrained to be roughly **linear**.
+
+For a fixed service life, linear growth means each replacement machine has to absorb another roughly fixed quantity of chain history. A ten-year cycle at 205 GB/year adds about 2 TB. A seven-year cycle adds less. Changing the service life changes the size and timing of each step, not the fact that required disk capacity grows roughly linearly.
+
+This is the useful part of the new long-run argument: the storage requirement is not itself compounding.
+
+### Storage improvement still decides who wins
 
 ![Storage cost per gigabyte, 1956–2026, with a distributional forecast to 2066](figures/fig-storage-outlook.png)
 
 *Historical storage cost with forecast confidence intervals. Model: [`models/storage/`](models/storage).*
 
-The model uses three annual improvement rates: **5%, 10% and 15%**, each decaying by 2% of itself per year. The 10% base case is anchored to the 2014–2026 observed CAGR of about 10.2%. The pessimistic case is close to the much weaker 2019–2026 period, while 15% assumes a return toward stronger pre-2020 improvement.
+Cheap storage does not currently look like a smooth exponential trend. Consumer SSD prices bottomed around $0.05/GB in mid-2023 and had risen to about $0.11/GB by January 2026. NAND input prices also rose sharply through 2025 as AI-related demand competed for manufacturing capacity [\[3\]](#ref-3)[\[4\]](#ref-4)[\[31\]](#ref-31)[\[32\]](#ref-32)[\[33\]](#ref-33).
 
-These rates are intentionally far below the historical headline versions of Moore's Law or Kryder's Law. That matters because Kryder's Law already failed as a practical price forecast. HDD cost improvement slowed sharply after roughly 2010, and by 2020 actual storage costs were orders of magnitude above the old extrapolated curve [\[13\]](#ref-13)[\[14\]](#ref-14)[\[15\]](#ref-15)[\[16\]](#ref-16).
-
-### The near-term evidence is mixed
-
-Consumer SSD prices bottomed around $0.05/GB in mid-2023 and had risen to about $0.11/GB by January 2026. NAND input prices also rose sharply through 2025 as AI-related demand competed for manufacturing capacity [\[3\]](#ref-3)[\[4\]](#ref-4). Industry sources describe demand growth materially ahead of supply growth, with new fabrication capacity arriving only gradually [\[31\]](#ref-31)[\[32\]](#ref-32)[\[33\]](#ref-33).
-
-That makes a rapid return to very high consumer storage improvement rates hard to assume. It does not prove a permanent plateau.
-
-NAND still has technical room to scale. Manufacturers are moving toward much higher layer counts [\[5\]](#ref-5)[\[6\]](#ref-6)[\[7\]](#ref-7), and new storage paradigms may eventually reset the curve. But denser storage is not automatically cheap consumer storage. DNA, glass and ceramic systems are currently aimed at archival or data-centre use, not $300 home nodes [\[68\]](#ref-68)[\[69\]](#ref-69)[\[70\]](#ref-70)[\[71\]](#ref-71).
-
-The opposite error is possible too. Long technological forecasts routinely miss paradigm shifts. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[66\]](#ref-66)[\[67\]](#ref-67), and forecasting research finds uncertainty widening rapidly with horizon [\[63\]](#ref-63)[\[64\]](#ref-64).
-
-### The long-term result depends on one uncertain variable
+The model therefore uses three starting improvement rates, **5%, 10% and 15% per year**, with each rate decaying by 2% of itself each year. The 10% base case is anchored to the observed 2014–2026 CAGR of about 10.2%; the 5% case is close to the much weaker 2019–2026 period.
 
 ![Node storage capacity against chain growth across eight decades and three improvement rates](figures/fig-storage.png)
 
 *The cross-generational view: stepped capacity, one purchase every ten years, against linear chain growth. Model: [`models/storage/charts.py`](models/storage/charts.py).*
 
-At roughly **10% annual storage improvement**, capacity growth eventually pulls away from linear blockchain growth and each replacement cycle gains headroom. At 5% or below, that separation weakens and the current chain-growth trajectory can become unsustainable after a small number of hardware generations.
+The chart shows why the long run is more reassuring in the base case. When cheap storage improves fast enough, capacity pulls away from linear chain growth and later hardware generations gain headroom.
 
-For the first cycle the sources converge. Rosenthal's long-term storage model [\[72\]](#ref-72), the IEEE roadmap [\[68\]](#ref-68) and Wikibon's Wright's Law analysis [\[65\]](#ref-65) all land in the 8 to 12% range, with the 10% base case in the middle.
+But the bounded-growth argument does **not** make the storage forecast irrelevant. A persistent positive compound improvement rate eventually beats linear growth. A rate that stalls, reverses, or decays toward zero quickly enough need not. The model deliberately includes decaying improvement rates, so the long-run result remains conditional on storage economics.
 
-This is the cleanest way to state the forecast:
+This separates two kinds of certainty that should not be blurred:
 
-- **First ten years:** relatively high confidence, because the 111 GB/year ceiling is dominated by current measurements and arithmetic.
-- **Later generations:** increasingly uncertain, because the result becomes dominated by the future improvement rate of cheap consumer storage.
+- The **111 GB/year first-cycle ceiling** is arithmetic under the chosen hardware assumptions.
+- The **shape of chain growth** is constrained by the current block-weight regime.
+- The **capacity of future $300 hardware** is a forecast, and uncertainty grows with the horizon.
 
-The detailed forecast scenarios and probability estimates are in Appendix C. They are informed estimates rather than model-generated probabilities.
+The near-term storage shock makes the present look worse than the long-run base case. It is still evidence that the storage side of the race cannot be assumed away. Kryder's Law already failed as a simple price forecast after HDD cost improvements slowed sharply [\[13\]](#ref-13)[\[14\]](#ref-14)[\[15\]](#ref-15)[\[16\]](#ref-16). NAND has technical room to scale [\[5\]](#ref-5)[\[6\]](#ref-6)[\[7\]](#ref-7), but denser storage does not automatically mean cheaper consumer storage.
+
+Long-range forecasts can also miss technology changes in the other direction. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[66\]](#ref-66)[\[67\]](#ref-67), while forecasting research shows uncertainty widening rapidly with horizon [\[63\]](#ref-63)[\[64\]](#ref-64).
+
+The detailed storage scenarios and forecast assumptions are retained in Appendix C.
 
 ---
 
-## 6. The other constraints do not bind
+## 5. The other constraints
 
-### 6.1 Bandwidth speed
+Storage is not the only resource that grows with the chain. Do any of the others fail first?
+
+### Bandwidth speed
 
 ![Required IBD bandwidth against residential internet supply](figures/fig-bandwidth.png)
 
 *Model: [`models/bandwidth/`](models/bandwidth).*
 
-Only the IBD download scales strongly with chain size. Following the tip needs roughly 3 KB/s with compact blocks, and ordinary peer serving is around 2 Mbps. Downloading the current 724 GB chain inside seven days requires about **9.8 Mbps**. Even the data-heavy year-10 scenario needs only around **30 Mbps**.
+Following the tip needs little bandwidth compared with IBD. Downloading the current 724 GB chain inside seven days requires about **9.8 Mbps**. Even the data-heavy year-10 scenario requires only around **30 Mbps**.
 
-Global median residential broadband is roughly 104 Mbps and has been improving much faster than chain growth [\[48\]](#ref-48)[\[59\]](#ref-59). Very slow connections already struggle with IBD today, but for most existing node-hosting regions, bandwidth speed is not the first constraint to fail.
+Global median residential broadband is roughly 104 Mbps and has been improving faster than chain growth [\[48\]](#ref-48)[\[59\]](#ref-59). Very slow connections already struggle with IBD, but bandwidth speed is not the first constraint to fail in most current node-hosting regions.
 
-Bandwidth **cost** is a different problem and is treated separately in Section 7.
+Bandwidth **cost** is a separate access problem and is treated in Section 6.
 
-### 6.2 IBD processing time
+### IBD processing
 
 ![Chain size against the seven-day processing limit](figures/fig-ibd.png)
 
 *Model: [`models/ibd/`](models/ibd).*
 
-On the N100 reference machine, IBD processing is dominated by the historical AssumeValid phase and tracks chain size more closely than transaction composition. Under the current trajectory, year-10 sync time is about **5.6 days**. The data-heavy scenario reaches about **9.9 days**.
+On the N100 reference machine, IBD processing tracks chain size more closely than transaction composition. Under the current trajectory, year-10 sync time is about **5.6 days**. The data-heavy scenario reaches about **9.9 days**.
 
-The processing ceiling lands around **116–117 GB/year** on static hardware, only slightly above the 111 GB/year storage ceiling. With modest software improvement it moves much further out. In either case, the reference disk fills before processing time becomes the binding problem.
+The static-hardware ceiling is around **116–117 GB/year**, just above the storage ceiling. Storage therefore fails first in the reference configuration.
 
-This constraint also has active mitigations. AssumeUTXO is already in Bitcoin Core and can reduce time-to-usable to hours by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than as requirements for the storage result. Past software optimisation has been essential to keeping IBD tractable, and the rate of that improvement has slowed [\[23\]](#ref-23).
+IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than requirements for the storage result. Past software optimisation has been important to keeping IBD tractable, and its future rate is uncertain [\[23\]](#ref-23).
 
-### 6.3 UTXO set and RAM
+### UTXO set and RAM
 
 ![UTXO chainstate growth scenarios against available RAM](figures/fig-utxo.png)
 
 *Model: [`models/utxo/`](models/utxo).*
 
-The current chainstate is about 11 GB, close to the amount a 16 GB machine can cache after the operating system takes its share. Once it grows beyond available RAM, more UTXO lookups hit disk. Benchmarks show that can make IBD materially slower, but it is a performance gradient rather than a functional cutoff [\[42\]](#ref-42).
+The current chainstate is about 11 GB, close to the amount a 16 GB machine can cache after the operating system takes its share. Once it grows beyond available RAM, more UTXO lookups hit disk. Benchmarks show that this can slow IBD materially, but it is a performance gradient rather than a functional cutoff [\[42\]](#ref-42).
 
-Even ordinary growth pushes the chainstate beyond current free RAM within a ten-year cycle. That still does not make the node unusable. Once synced, lookup demand is much lower, and each hardware generation brings more memory.
+The UTXO set also has relief mechanisms that archival storage does not. Its size has already fallen from its January 2025 peak, some low-value inscription outputs can be consolidated or cleaned up, and Utreexo proposes replacing the conventional chainstate with a compact accumulator [\[24\]](#ref-24)[\[45\]](#ref-45)[\[46\]](#ref-46)[\[47\]](#ref-47).
 
-The UTXO set also has relief mechanisms that archival storage does not. The count has already fallen from its January 2025 peak, large numbers of low-value inscription outputs could potentially be consolidated or cleaned up, and Utreexo proposes replacing the conventional chainstate with a compact accumulator [\[24\]](#ref-24)[\[45\]](#ref-45)[\[46\]](#ref-46)[\[47\]](#ref-47).
-
-An adversary can create UTXOs far faster than the organic scenarios, but a UTXO-maximising block and a chain-storage-maximising block are different constructions. The attacker cannot maximise both pressures with the same block.
+An adversary can maximise UTXO creation or maximise stored bytes, but not both with the same block construction. Neither path changes storage being the first hard capacity limit in the reference model.
 
 ---
 
-## 7. Affordability and decentralisation are different questions
+## 6. Affordability, pruning and decentralisation
 
-The $300 machine and seven-day sync target describe a population with access to cheap hardware and reasonably priced broadband. That is not the whole world.
+A $300 machine and a seven-day sync target describe only part of the node population. Cheap hardware is not equally cheap everywhere, and connection cost can matter more than connection speed.
 
-> **Not modelled.** The figures in this section are sourced, but I have not built a chain-growth model for affordability. Treat this as a scope argument, not a fifth hardware result.
+The metered-bandwidth examples in Appendix C put the difference in scale. At the cited tariffs, a one-time IBD is estimated at about **$2,540 using the Sub-Saharan African regional average**, around **$514 in Nigeria**, and around **$65 in India**. These figures vary enormously by country and tariff and are not part of the four-constraint model.
 
-In some metered markets, downloading the chain can cost more than the node itself. Using the source data in Appendix C, the estimated one-time IBD cost is about **$2,540 at the Sub-Saharan African regional average**, about **$514 in Nigeria**, and about **$65 in India**. Those figures vary enormously by country and tariff, but the direction is clear: chain growth hurts most where data is already expensive.
+Independent P2P measurement attributes about **0.3% of reachable Bitcoin nodes to Africa and 1.0% to South America**, or 1.3% combined [\[60\]](#ref-60). The low share predates the inscription-driven increase in block size and reflects broader differences in income, hardware access and connectivity. Chain growth can worsen that exclusion, but it did not create it.
 
-That is a serious access problem. It does not automatically overturn the aggregate decentralisation result.
+Reachable-node share is also an incomplete decentralisation metric. It omits nodes behind NAT or firewalls, and coercion resistance depends on jurisdictional spread as well as raw count. A small region can contribute more diversity than its node share suggests.
 
-Independent P2P measurement attributes about **0.3% of reachable Bitcoin nodes to Africa and 1.0% to South America**, or 1.3% combined [\[60\]](#ref-60). The low share predates the inscription-driven increase in block size and is tied to broader differences in income, hardware imports and connectivity. Chain growth can worsen that exclusion, but it did not create it.
+This is why the paper should not jump from hardware arithmetic to a claim that catastrophic centralisation is impossible. The model establishes the resource pressure. It does not estimate how many operators leave at each cost level, how many archival peers the network needs, or what geographic distribution is sufficient.
 
-There is an important limitation to using node share this way. Coercion resistance depends on geographic and jurisdictional spread as well as raw count. A region with few nodes can still add meaningful jurisdictional diversity. Reachable-node measurements also omit nodes behind NAT or firewalls, and that undercount is unlikely to be geographically uniform.
+Pruning sharpens that limitation. About 89% of reachable nodes currently advertise archival service and about 11% are pruned [\[61\]](#ref-61). If more operators respond to storage pressure by pruning rather than upgrading, validating-node counts can remain healthy while archival density falls.
 
-So the bounded conclusion is narrower than "affordability does not matter". It is that **metered bandwidth does not currently explain enough of the observed node population for it to replace storage as the binding aggregate constraint in this model**.
-
----
-
-## 8. What would change the findings
-
-The 111 GB/year ceiling moves directly when its inputs move:
-
-- **Higher budget.** Around $400–500 can buy substantially more storage. With 4 TB, the ten-year storage ceiling roughly doubles and the single-cycle problem largely disappears.
-- **Shorter service life.** At eight years the ceiling rises to about 139 GB/year. At seven years it is about 159 GB/year.
-- **More usable disk space.** Reducing the ext4 reservation moves the ten-year ceiling only modestly, to roughly 119 GB/year.
-
-The multi-generation result is more sensitive. If cheap consumer storage returns to sustained improvement above roughly 15% per year, later hardware generations gain headroom much faster than the base case. If improvement stalls near 0–5%, the long-run result worsens.
-
-The ordering between storage and IBD could also change if Bitcoin Core's sync performance stops improving or regresses. The UTXO result worsens if high UTXO creation returns and persists.
-
-### The operator may prune instead of upgrade
-
-The model treats a full disk as an upgrade event, but real operators have easier options. They can stop running the node or enable pruning at no hardware cost.
-
-That makes the model potentially optimistic. Better storage value in 2040 does not mean an operator wants to open the box, migrate data, spend more money or maintain a machine they expected to leave alone. The Pi 4 transition is a warning: the ecosystem largely moved on from the platform rather than continually upgrading it.
-
-About 89% of reachable nodes currently advertise archival service and about 11% are pruned [\[61\]](#ref-61). If pruning becomes the dominant response to storage pressure, archival density can fall even while the total number of validating nodes looks healthy.
-
-### Limitations
-
-This paper models one deliberately cheap configuration rather than the median node. It holds growth constant inside each scenario even though actual demand arrives in waves. The sustained data-heavy case has not been observed for years at a time.
-
-The UTXO scenarios depend on future transaction mix. Long-range storage forecasts depend on technologies and manufacturing economics that are inherently hard to forecast.
-
-The paper also does not model Lightning capacity, fee-market sustainability, mining centralisation, or long-run software optimisation. Each interacts with Bitcoin's scaling trade-offs, but none is needed to calculate the first-cycle storage ceiling.
+The defensible conclusion is therefore about the **shape and severity of the hardware pressure**, not a precise decentralisation threshold. Under current rules, chain growth does not create an ever-accelerating storage requirement. It can still make cheap archival participation harder, especially during a sustained data-heavy period or a storage-market slowdown.
 
 ---
 
-## 9. Objections
+## 7. What would change the result
 
-### "Home nodes do not matter because miners dominate consensus propagation"
+The first-cycle storage ceiling moves directly with three assumptions.
 
-Propagation and enforcement are different functions. A home node does not need to be central to block propagation to enforce consensus rules for its operator. Full nodes enforce by rejecting invalid blocks, not by being important routers [\[57\]](#ref-57).
+A larger budget buys more headroom. Around $400–500 can buy substantially more storage; with 4 TB, the single-cycle problem largely disappears under the scenarios modelled here. A shorter service life also helps: the storage ceiling rises from 111 GB/year at ten years to about 139 GB/year at eight years and 159 GB/year at seven. Reducing filesystem reservation moves the ten-year ceiling only modestly, to roughly 119 GB/year.
 
-### "Pruned nodes validate identically, so storage is not a decentralisation problem"
+The long-run result is more sensitive to conditions outside the current model:
 
-Pruned nodes do validate identically. They still need the historical chain to bootstrap, and they rely on archival peers to supply it. The protocol does not enforce a minimum archival population [\[58\]](#ref-58)[\[61\]](#ref-61).
+- **The block-weight regime changes.** A higher limit raises the chain-growth envelope and requires the storage analysis to be rerun.
+- **Cheap storage stops improving.** Linear chain growth still accumulates forever. If capacity per dollar plateaus for long enough, a fixed $300 target eventually loses headroom.
+- **Storage improves differently from the model.** The current 5%, 10% and 15% scenarios are forecasts, not physical laws. The model's decay assumption matters to very long horizons.
+- **IBD performance stops improving or regresses.** Processing could overtake storage as the first constraint.
+- **Operators respond differently from the model.** A full disk is treated as an upgrade event, but a real operator may prune or stop instead. Maintenance effort may matter as much as purchase price.
 
-### "$300 is too low; most serious operators spend more"
+The paper also models one deliberately cheap configuration rather than the median node. It holds growth constant inside each scenario even though demand arrives in waves. The data-heavy case has not been sustained for years, and future transaction mix can change both archival and UTXO pressure.
 
-A larger budget materially improves the result. That is why $300 is useful as a stress test rather than a claim about the median operator. At roughly $500, 4 TB storage can remove the first-cycle ceiling under the scenarios modelled here.
-
-But increasing the minimum spend is itself part of the decentralisation question. "More expensive hardware solves it" cannot by itself answer whether chain growth raises the participation floor.
-
-### "Ten years is too long for consumer hardware"
-
-It may be. At eight years the storage ceiling rises from 111 to about 139 GB/year, and at seven years to about 159 GB/year. The current trajectory then passes comfortably.
-
-That objection weakens the first-cycle result but not the broader method. Whatever replacement interval is chosen, the question remains whether chain growth forces upgrades faster than cheap hardware improves.
+It does not model Lightning capacity, fee-market sustainability, mining centralisation, or the long-run value of future Bitcoin Core optimisation. None is needed to calculate the first-cycle storage ceiling, but all sit outside any claim about Bitcoin decentralisation as a whole.
 
 ---
 
-## 10. Related work
+## 8. Related work
 
-The tension between block space cost and decentralisation is well recognised [\[53\]](#ref-53)[\[54\]](#ref-54)[\[55\]](#ref-55). This paper tries to put numbers on where it starts to bind.
+The trade-off between block-space use, validation cost and decentralisation is well recognised [\[53\]](#ref-53)[\[54\]](#ref-54)[\[55\]](#ref-55). This paper asks where that cost begins to bind on cheap modern hardware.
 
-Gencer et al. [\[59\]](#ref-59) measured Bitcoin and Ethereum decentralisation through bandwidth, latency, geography and mining concentration. This paper focuses on a different layer of the problem: the resource burden on the individual node operator and how that burden changes over time.
+Gencer et al. [\[59\]](#ref-59) measured Bitcoin and Ethereum decentralisation through bandwidth, latency, geography and mining concentration. Wu's 2014–2025 infrastructure-resilience work [arXiv:2602.14372] looks at network-level health. Croman et al. [FC 2016] framed throughput and bootstrap time as resource constraints in decentralised blockchains. Kiffer et al. [\[60\]](#ref-60) provide the geographic node measurements used here, while Voskuil [\[56\]](#ref-56) states the theoretical trade-off directly: higher validation cost reduces decentralisation.
 
-Wu's 2014–2025 infrastructure-resilience work [arXiv:2602.14372] looks at network-level health, while this analysis asks what hardware conditions would cause nodes to stop joining or remaining archival.
-
-Croman et al. [FC 2016] identified throughput and bootstrap time as fundamental resource constraints in decentralised blockchains. Their constraint-based framing is close to the approach here, but predates both inscriptions and the recent reversal in NAND pricing.
-
-Kiffer et al. [\[60\]](#ref-60) provide the geographic node measurements used to bound the metered-bandwidth argument in Section 7.
-
-Voskuil [\[56\]](#ref-56) states the theoretical trade-off directly: higher validation cost reduces decentralisation. This paper attempts to put numbers around where that pressure becomes operationally binding.
+The contribution here is narrower: measure the resource burden on a cheap individual node, identify which constraint fails first, and separate the first hardware cycle from the cross-generational trend.
 
 ---
 
-## 11. Conclusion
+## 9. Conclusion
 
-For a $300 archival node expected to last ten years, **storage is the first hardware constraint to bind**. The reference 2 TB SSD can absorb about **111 GB of new chain data per year**. The observed trajectory is below that level, but not by much: today's average block size is only 28% below the break point, and March 2024 already produced a monthly average above it.
+For a **$300 archival node expected to last ten years, storage is the first hardware constraint to bind**. The reference 2 TB SSD can absorb about **111 GB of new chain data per year**. The observed trajectory is below that, but the margin is not large. Today's average block size is only 28% below the break point, March 2024 briefly exceeded it, and a sustained data-heavy mix could cut the reference node's storage life to roughly **5.7 years**.
 
-The other constraints are less severe. Bandwidth speed improves faster than chain growth for most current node-hosting regions. IBD processing reaches its limit slightly after storage and has active software mitigations. UTXO growth can slow validation but does not create the same hard operating cutoff and has several independent paths to relief.
+Bandwidth speed is less restrictive for most current node-hosting regions. IBD processing reaches its static-hardware limit slightly after storage and has active software mitigations. UTXO growth can slow validation, but does not create the same hard capacity cutoff.
 
-Over multiple hardware generations, the outlook is better if consumer storage continues improving near the base-case rate. Compound capacity growth then outpaces linear chain growth and headroom expands. The confidence in that statement falls rapidly beyond the first decade because future storage economics dominate the result.
+The long-run storage problem is easier than the first-cycle numbers make it look, but not because future storage can be assumed to save Bitcoin. The current block-weight regime constrains sustained chain growth to be roughly linear. A fixed service life therefore adds a roughly fixed quantity of history to each replacement cycle rather than a compounding one. If cheap storage keeps improving fast enough, capacity pulls away. The base storage scenario does exactly that.
 
-The near-term risk is therefore not a slow, inevitable collapse in node decentralisation. It is a period of sustained data-heavy demand, fully compatible with current consensus rules, that shortens the life of cheap archival hardware from roughly ten years to five or six. If operators respond by pruning rather than upgrading, the loss appears first in archival capacity rather than in headline validating-node counts.
+The converse still matters. Storage prices have risen sharply since 2023, the forecast is uncertain, and the model itself allows improvement rates to decay. A bounded linear burden can remain painful for a long time if the technology on the other side of the race stagnates.
+
+So the answer to the title question is narrower than an unconditional no. **Under today's rules, chain growth does not produce an inherently accelerating hardware-cost spiral, and the current trajectory remains inside the ten-year storage target. But sustained data-heavy blocks can force earlier upgrades or pruning, and this model cannot prove that chain growth could never contribute to severe node centralisation.**
+
+That is the distinction the data supports: a real near-term storage constraint, a structurally bounded long-run growth problem, and no basis for pretending either one settles the entire decentralisation question.
 
 ---
 
@@ -379,7 +320,7 @@ Ranked by evidence type: on-chain measurement, controlled benchmark, observed ma
 | AI NAND shortage (2025–2028) | Industry forecast | [\[3\]](#ref-3), [\[31\]](#ref-31), [\[32\]](#ref-32), [\[34\]](#ref-34), [\[36\]](#ref-36), [\[37\]](#ref-37) | Established now, contested duration |
 | Metered bandwidth costs | Observed market data | ITU 2024, Cable.co.uk | **Not modelled** |
 
-The 111 GB/year ceiling rests on current measurements and arithmetic. The claim that later hardware generations gain headroom depends much more heavily on future storage improvement. If the storage forecast is wrong, the multi-generation conclusion moves while the first-cycle ceiling remains.
+The 111 GB/year ceiling rests on current measurements and arithmetic. The block-weight regime constrains the shape of sustained chain growth, but the capacity of later $300 hardware remains a forecast. If the storage forecast is wrong, the multi-generation result moves while the first-cycle ceiling does not.
 
 ---
 
@@ -406,7 +347,7 @@ Run any chart script directly to regenerate its figure into `figures/`. `capacit
 
 ## Appendix C: supplementary calculations
 
-This appendix keeps the detailed scenario tables and derivations out of the main reading path without removing them from the paper.
+This appendix keeps detailed scenarios and derivations out of the main reading path without removing the audit trail.
 
 ### C.1 Chain-growth scenarios
 
@@ -432,7 +373,7 @@ block size = 250 + *N* × (199 + *D*) bytes
 | All images | 21 KB | ~186 | ~3.95 MB |
 | Single inscription (Slipstream) | ~4 MB | 1 | ~4.0 MB |
 
-BRC-20 mints remain relatively small even when a block is full by weight because transaction overhead is large relative to their payload. Images use the weight budget more efficiently as stored bytes. At the observed inscription peak, roughly 10% of inscriptions were images by count. Raising that mix to about 27% produces the 3.82 MB sustained data-heavy scenario. Inscription-size evidence is in [\[40\]](#ref-40).
+BRC-20 mints remain relatively small even when a block is full by weight because transaction overhead is large relative to payload. Images use the weight budget more efficiently as stored bytes. At the observed inscription peak, roughly 10% of inscriptions were images by count. Raising that mix to about 27% produces the 3.82 MB sustained data-heavy scenario. Inscription-size evidence is in [\[40\]](#ref-40).
 
 ### C.2 Storage sensitivity to average block size
 
@@ -480,7 +421,7 @@ Illustrative pricing at 5 sat/vB and $100,000/BTC:
 | Base | 10%/yr | 2014–2026 CAGR (10.2%) | Twelve observed years through two shortage cycles |
 | Pessimistic | 5%/yr | 2019–2026 CAGR (4.3%) | Structural AI demand and weaker NAND cost improvement persist |
 
-The model decays each annual improvement rate by 2% of itself per year.
+The model decays each annual improvement rate by 2% of itself per year. This detail matters to the asymptotic argument: a rate can remain positive in every year while still shrinking quickly enough that cumulative capacity improvement does not grow without limit. The model therefore should not be described as proving that "any positive storage improvement eventually wins".
 
 The original forecast communication scenarios are retained below. The probabilities are informed estimates, not model output.
 
@@ -492,7 +433,15 @@ The original forecast communication scenarios are retained below. The probabilit
 | Optimistic | ~15%/yr | 4.0x | ~20% | Requires stronger manufacturing expansion |
 | Paradigm shift | 20%+/yr | 6.2x+ | ~10% | New storage technology reaches consumer pricing |
 
-### C.5 Metered-bandwidth examples
+### C.5 Bounded-growth arithmetic
+
+The block-weight argument is separate from the storage forecast. Under the current rules, each block has a bounded weight and difficulty targets a roughly stable block cadence. At a fixed average chain-growth rate *g* and a fixed replacement interval *T*, each hardware cycle adds approximately *gT* of history.
+
+That means required disk capacity grows roughly linearly with the number of replacement cycles. The percentage increase needed from one adequately sized replacement disk to the next falls as the base disk becomes larger.
+
+This arithmetic is useful, but it does not by itself establish that a fixed-budget node remains viable forever. That requires a separate assumption about how cheap storage capacity evolves. It also should be reproduced inside the paper's Python models before exact multi-cycle values are treated as model output.
+
+### C.6 Metered-bandwidth examples
 
 | Region | Cost/GB | One-time IBD cost | Min sync (4.5 GB/mo) | Serving peers (~30 GB/mo) |
 |---|---|---|---|---|
@@ -505,7 +454,7 @@ The original forecast communication scenarios are retained below. The probabilit
 
 These figures are not part of the four-constraint model. They illustrate why adequate connection **speed** and affordable connection **cost** are separate questions.
 
-### C.6 Operator response when storage fills
+### C.7 Operator response when storage fills
 
 | Response | Effort | Cost | Network effect |
 |---|---|---|---|
