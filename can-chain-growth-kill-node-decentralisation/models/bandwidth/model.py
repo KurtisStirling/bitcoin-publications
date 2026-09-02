@@ -27,22 +27,30 @@ Target hardware (from Q036): $300 N100 mini-PC, 2TB SSD, 16GB RAM
 
 BLOCKS_PER_HOUR = 6
 BLOCKS_PER_DAY = 144
-BLOCKS_PER_YEAR = 144 * 365  # 52,560
 SECONDS_PER_DAY = 86_400
 
 # ── Baseline (2025) ──────────────────────────────────────────────────
+# Baselines and scenarios live in models/scenarios.py. Do not redefine here.
 
-CHAIN_SIZE_GB_2026 = 724.0
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
+
+BLOCKS_PER_YEAR = sc.BLOCKS_PER_YEAR
+CHAIN_SIZE_GB_2026 = sc.CHAIN_GB_2026
 
 # ── IBD processing rates (from ibd.py) ───────────────────────────────
 # These are CPU/I/O rates — they set the FLOOR for when download stops
 # being the bottleneck.
 
-IBD_RATE_AV_GB_PER_HR = 12.0   # I/O bound, calibrated to observed N100 IBD
-IBD_RATE_BLENDED_GB_PER_HR = 12.0  # observed blended rate on N100
+IBD_RATE_AV_GB_PER_HR = sc.IBD_RATE_GB_PER_HR   # I/O bound, observed N100 IBD
+IBD_RATE_BLENDED_GB_PER_HR = sc.IBD_RATE_GB_PER_HR  # observed blended rate on N100
 
-# Download speed needed to match processing rate:
-#   12 GB/hr: 12 * 1024 * 8 / 3600 ≈ 27.3 Mbps
+# Download speed needed to match processing rate. Decimal throughout:
+# 1 GB = 10^9 bytes, 1 Mbps = 10^6 bit/s.
+#   12 GB/hr: 12 * 1000 * 8 / 3600 ≈ 26.7 Mbps
 # Below this speed, download is the IBD bottleneck.
 
 # ── Block relay ──────────────────────────────────────────────────────
@@ -141,27 +149,28 @@ BANDWIDTH_TRAJECTORIES = {
 
 # ── Policy scenarios (from ceiling.py) ────────────────────────────────
 
+def _policy(rate_gb_yr, note):
+    """Rate and average block size can never disagree: one derives the other."""
+    return {
+        "growth_gb_yr": rate_gb_yr,
+        "avg_block_mb": rate_gb_yr / sc.GB_PER_YEAR_PER_MB_BLOCK,
+        "note": note,
+    }
+
+
 POLICY_SCENARIOS = {
-    "Unrestricted monetary": {
-        "growth_gb_yr": 55,
-        "avg_block_mb": 1.07,
-        "note": "Current rules, only monetary txs fill blocks.",
-    },
-    "Unrestricted current": {
-        "growth_gb_yr": 80,
-        "avg_block_mb": 1.56,
-        "note": "Current trajectory: mixed monetary + inscription.",
-    },
-    "Unrestricted worst": {
-        "growth_gb_yr": 150,
-        "avg_block_mb": 2.92,
-        "note": "Sustained inscription wave, near-full witness capacity.",
-    },
-    "Capped (Option D)": {
-        "growth_gb_yr": 55,
-        "avg_block_mb": 1.07,
-        "note": "BIP cap active, only monetary txs.",
-    },
+    "Unrestricted monetary": _policy(
+        sc.RATE_MONETARY, "Current rules, only monetary txs fill blocks."),
+    "Unrestricted current": _policy(
+        sc.RATE_CURRENT, "Current trajectory: today's 1.69 MB average block."),
+    "Realistic worst": _policy(
+        sc.RATE_REALISTIC_WORST,
+        "Inscription-saturated blocks at the observed 10% image mix."),
+    "Theoretical max": _policy(
+        sc.RATE_THEORETICAL_MAX,
+        "4M weight units of pure witness data. A bound, not a forecast."),
+    "Capped (Option D)": _policy(
+        sc.RATE_MONETARY, "BIP cap active, only monetary txs."),
     "Capped worst": {
         "growth_gb_yr": 100,
         "avg_block_mb": 1.95,
@@ -174,17 +183,17 @@ POLICY_SCENARIOS = {
 
 def mbps_to_gb_per_hr(mbps: float) -> float:
     """Convert Mbps (megabits/sec) to GB/hr."""
-    return mbps / 8 * 3600 / 1024
+    return mbps / 8 * 3600 / 1000
 
 
 def mbps_to_gb_per_day(mbps: float) -> float:
     """Convert Mbps (megabits/sec) to GB/day."""
-    return mbps * SECONDS_PER_DAY / 8 / 1024
+    return mbps * SECONDS_PER_DAY / 8 / 1000
 
 
 def gb_per_day_to_kbps(gb_per_day: float) -> float:
     """Convert GB/day to KB/s."""
-    return gb_per_day * 1024 * 1024 / SECONDS_PER_DAY
+    return gb_per_day * 1_000_000 / SECONDS_PER_DAY
 
 
 def bandwidth_at_year(base_mbps: float, improvement_pct: float, year: int) -> float:
@@ -203,14 +212,14 @@ def block_relay_kbps(avg_block_mb: float) -> dict:
     - Full blocks (no compact): full block every ~10 min (worst case)
     """
     compact_kb_per_block = COMPACT_BLOCK_KB
-    full_kb_per_block = avg_block_mb * 1024
+    full_kb_per_block = avg_block_mb * 1000
     effective_kb_per_block = (
         compact_kb_per_block * (1 - COMPACT_BLOCK_FAIL_RATE) +
         full_kb_per_block * COMPACT_BLOCK_FAIL_RATE
     )
     compact_kbps = effective_kb_per_block * BLOCKS_PER_DAY / SECONDS_PER_DAY
     full_kbps = full_kb_per_block * BLOCKS_PER_DAY / SECONDS_PER_DAY
-    tx_relay_kbps = TX_RELAY_AVG_BYTES_PER_SEC / 1024
+    tx_relay_kbps = TX_RELAY_AVG_BYTES_PER_SEC / 1000
 
     return {
         "compact_kbps": compact_kbps,
@@ -226,11 +235,11 @@ def block_relay_kbps(avg_block_mb: float) -> dict:
 def peer_serving_kbps(syncing_peers: int = SYNCING_PEERS_TYPICAL) -> dict:
     """Upload bandwidth consumed serving historical blocks to syncing peers."""
     total_mbps = syncing_peers * UPLOAD_PER_SYNCING_PEER_MBPS
-    total_kbps = total_mbps * 1024 / 8
+    total_kbps = total_mbps * 1000 / 8
 
     return {
         "syncing_peers": syncing_peers,
-        "per_peer_kbps": UPLOAD_PER_SYNCING_PEER_MBPS * 1024 / 8,
+        "per_peer_kbps": UPLOAD_PER_SYNCING_PEER_MBPS * 1000 / 8,
         "total_kbps": total_kbps,
         "total_mbps": total_mbps,
     }
@@ -248,7 +257,7 @@ def ibd_download_requirement(chain_gb: float, max_days: int = MAX_IBD_DAYS) -> d
     """
     gb_per_day = chain_gb / max_days
     kbps = gb_per_day_to_kbps(gb_per_day)
-    mbps = kbps * 8 / 1024
+    mbps = kbps * 8 / 1000
 
     return {
         "chain_gb": chain_gb,
@@ -334,7 +343,7 @@ def print_component_breakdown():
               f"{r['total_compact_kbps']:>10.2f}")
 
     print()
-    print(f"  Transaction relay background: ~{TX_RELAY_AVG_BYTES_PER_SEC/1024:.1f} KB/s")
+    print(f"  Transaction relay background: ~{TX_RELAY_AVG_BYTES_PER_SEC/1000:.1f} KB/s")
     print(f"  Compact block (BIP152): ~{COMPACT_BLOCK_KB} KB/block, "
           f"{COMPACT_BLOCK_FAIL_RATE*100:.0f}% fallback to full")
     print()
@@ -382,7 +391,7 @@ def print_download_vs_cpu():
     print("  bottleneck?")
     print()
 
-    processing_mbps = IBD_RATE_BLENDED_GB_PER_HR * 1024 * 8 / 3600
+    processing_mbps = IBD_RATE_BLENDED_GB_PER_HR * 1000 * 8 / 3600
 
     print(f"  Processing rate (N100):  {IBD_RATE_BLENDED_GB_PER_HR:.0f} GB/hr "
           f"→ need {processing_mbps:.0f} Mbps to keep up")
@@ -409,10 +418,15 @@ def print_download_vs_cpu():
               f"{r['total_days']:>10.1f}  {r['bottleneck']}")
 
     print()
-    print("  At 5 Mbps:  download takes 13 days — bandwidth is the bottleneck.")
-    print("  At 10 Mbps: download takes 6.6 days — just fits in 7-day window.")
-    print("  At 25 Mbps: download takes 2.6 days — just above processing rate.")
-    print("  At 27+ Mbps: download faster than processing — I/O dominates.")
+    for _mbps, _tail in [
+        (5, "bandwidth is the bottleneck"),
+        (10, "against the 7-day window"),
+        (25, "just above processing rate"),
+    ]:
+        _days = CHAIN_SIZE_GB_2026 / mbps_to_gb_per_hr(_mbps) / 24
+        print(f"  At {_mbps} Mbps: download takes {_days:.1f} days — {_tail}.")
+    print(f"  At {processing_mbps:.0f}+ Mbps: download faster than processing "
+          f"— I/O dominates.")
     print()
 
 
@@ -441,7 +455,7 @@ def print_trajectory_comparison():
                                    traj["annual_improvement_pct"], yr)
 
             # Use worst-case growth for stress test
-            worst = POLICY_SCENARIOS["Unrestricted worst"]
+            worst = POLICY_SCENARIOS["Realistic worst"]
             chain_gb = CHAIN_SIZE_GB_2026 + worst["growth_gb_yr"] * yr
 
             r = ibd_actual_time_days(chain_gb, dl)
@@ -454,7 +468,8 @@ def print_trajectory_comparison():
                   f"{r['download_days']:>12.1f}  {r['total_days']:>12.1f}  "
                   f"{r['bottleneck']}{status}")
 
-        print("  (! = exceeds 7-day threshold, worst-case 196 GB/yr growth)")
+        print(f"  (! = exceeds 7-day threshold, "
+              f"{sc.RATE_REALISTIC_WORST:.0f} GB/yr realistic-worst growth)")
         print()
 
 
@@ -492,7 +507,7 @@ def print_bandwidth_ceiling():
     # 129 GB/yr * 10 + 724 = 2014 GB in 7 days → 2014 / 7 / 24 * 1024 * 8 / 3600 Mbps
     needed_chain = CHAIN_SIZE_GB_2026 + 129 * 10
     needed_gbday = needed_chain / MAX_IBD_DAYS
-    needed_mbps = needed_gbday * 1024 * 8 / SECONDS_PER_DAY
+    needed_mbps = needed_gbday * 1000 * 8 / SECONDS_PER_DAY
     print(f"  Crossover: need {needed_mbps:.0f} Mbps for bandwidth ceiling "
           f"to match disk ceiling (129 GB/yr).")
     print(f"  At that speed, chain at year 10 = {needed_chain:.0f} GB, "
@@ -541,7 +556,8 @@ def print_developing_nation_focus():
               f"{r['total_days']:>10.1f}  {r['bottleneck']}{flag}")
 
     print()
-    print("  At 5 Mbps, IBD is download-bound at 13 days. This is the current")
+    print(f"  At 5 Mbps, IBD is download-bound at "
+          f"{CHAIN_SIZE_GB_2026 / mbps_to_gb_per_hr(5) / 24:.0f} days. This is the current")
     print("  reality — not caused by future chain growth. A developing-nation")
     print("  operator already needs ~10 Mbps to IBD within 7 days.")
     print()
@@ -568,7 +584,7 @@ def print_developing_nation_focus():
     serving_1 = peer_serving_kbps(1)
     headroom_2 = ul_2025 / serving_2["total_mbps"]
     headroom_1 = ul_2025 / serving_1["total_mbps"]
-    print(f"  Upload available:    {ul_2025} Mbps ({ul_2025 * 1024 / 8:.0f} KB/s)")
+    print(f"  Upload available:    {ul_2025} Mbps ({ul_2025 * 1000 / 8:.0f} KB/s)")
     print(f"  1 syncing peer:      {serving_1['total_mbps']:.1f} Mbps → "
           f"{headroom_1:.0f}x headroom")
     print(f"  2 syncing peers:     {serving_2['total_mbps']:.1f} Mbps → "
@@ -581,7 +597,8 @@ def print_developing_nation_focus():
     print("  A 5 Mbps / 2 Mbps node can:")
     print("    - Follow the tip:      YES (~3 KB/s with compact blocks)")
     print("    - AssumeUTXO sync:     YES (~5 hours to usable)")
-    print("    - Full IBD (<7 days):  NO (takes ~13 days, download-bound)")
+    print(f"    - Full IBD (<7 days):  NO (takes "
+          f"~{CHAIN_SIZE_GB_2026 / mbps_to_gb_per_hr(5) / 24:.0f} days, download-bound)")
     print("    - Serve 2 peers:       YES (barely — 1x headroom)")
     print()
     print("  Bandwidth IS a real limitation for developing nations, but:")

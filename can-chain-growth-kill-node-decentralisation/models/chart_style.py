@@ -60,8 +60,28 @@ CEIL_FILL_ALPHA = 0.20
 CEIL_LW_BASE    = 1.2
 CEIL_LW_BOUND   = 0.7
 
-# ── Chain growth: bitcoin orange family, no fill ──────────────────────
+# ── Chain growth: sequential heat ramp, mild → severe ─────────────────
+# The demand scenarios are ordered by growth rate, so colour encodes
+# magnitude rather than identity: one ramp, light → dark, never cycled.
+# All four carry the same line weight — colour does the work, not thickness.
+#
+# Lightness is monotonic across the ramp. The lightest step sits below 3:1
+# against white; the required relief is the direct right-edge label every
+# line already carries.
 
+CHAIN_RAMP = ["#E3A008", "#D1600A", "#A8300C", "#6E1206"]
+CHAIN_LW = 1.0
+
+# The theoretical maximum sits at the top of the same severity scale, so it
+# keeps the darkest step. Dotted marks it as a bound rather than a forecast.
+BOUND_COLOR = CHAIN_RAMP[3]
+BOUND_LS    = ":"
+
+# A derived hardware threshold is not a chain-growth scenario at all: grey.
+REF_COLOR = "#8A8A8A"
+REF_LW    = 0.8
+
+# Retained for the bandwidth and IBD charts.
 CHAIN_COLOR     = "#F7931A"
 CHAIN_COLOR_MAX = "#D4600A"
 CHAIN_LW_CONS   = 0.8
@@ -96,14 +116,15 @@ def save(fig, name):
     print(f"Saved: {png}")
 
 
-def group_legend(ax, ceil_label, chain_label, loc="upper left"):
+def group_legend(ax, ceil_label, chain_label, loc="upper left",
+                 chain_color=None):
     """Add a minimal 2-entry legend identifying the ceiling and chain groups."""
     from matplotlib.lines import Line2D
     handles = [
         Line2D([0], [0], color=CEIL_LINE_BASE, linewidth=CEIL_LW_BASE,
                linestyle="-", label=ceil_label),
-        Line2D([0], [0], color=CHAIN_COLOR, linewidth=CHAIN_LW_BASE,
-               linestyle="--", label=chain_label),
+        Line2D([0], [0], color=chain_color or CHAIN_COLOR, linewidth=CHAIN_LW,
+               linestyle="-", label=chain_label),
     ]
     ax.legend(handles=handles, loc=loc, fontsize=7)
 

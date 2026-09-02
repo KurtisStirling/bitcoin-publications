@@ -16,13 +16,25 @@ Target upgrade cycle (from Q038): 8-10 years
 
 # ── Baseline (2025) ──────────────────────────────────────────────────
 
-CHAIN_SIZE_GB_2026 = 724.0
-CHAINSTATE_GB_2025 = 11.0        # UTXO set on-disk (LevelDB)
-UTXO_SET_ENTRIES_2025 = 169_000_000
-BYTES_PER_UTXO_ENTRY = 63        # measured: 11 GB / 173M entries (Apr 2025)
+# Baselines and scenarios live in models/scenarios.py so every model in this
+# paper uses the same numbers. Do not redefine them here.
+
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
+
+CHAIN_SIZE_GB_2026 = sc.CHAIN_GB_2026
+CHAINSTATE_GB_2025 = sc.CHAINSTATE_GB_2025
+UTXO_SET_ENTRIES_2025 = sc.UTXO_SET_ENTRIES_2025
+BYTES_PER_UTXO_ENTRY = sc.BYTES_PER_UTXO_ENTRY
 
 # IBD: N100 mini-PC with NVMe SSD, Bitcoin Core defaults
-IBD_RATE_GB_PER_HOUR_2025 = 12.0  # ~2.5 days for 724 GB
+IBD_RATE_GB_PER_HOUR_2025 = sc.IBD_RATE_GB_PER_HR
+
+REALISTIC_WORST_MB = sc.SCENARIOS["realistic_worst"]["avg_block_mb"]
+THEORETICAL_MAX_MB = sc.SCENARIOS["theoretical_max"]["avg_block_mb"]
 
 # ── Target hardware ($300, static purchase) ──────────────────────────
 
@@ -36,14 +48,17 @@ IBD_RATE_GB_PER_HOUR_2025 = 12.0  # ~2.5 days for 724 GB
 #                                         too small to model)
 #
 # Total usable for Bitcoin data: 1,850 GB
-SSD_GB = 1850
+SSD_GB = sc.SSD_GB
 
-RAM_GB = 16         # DDR4/DDR5
-MAX_IBD_DAYS = 7    # psychological barrier — beyond this, new operators give up
+# Nominal capacity with the ext4 root reservation reclaimed (tune2fs -m 0).
+SSD_GB_NO_FS_RESERVE = sc.SSD_GB + 100
+
+RAM_GB = sc.RAM_GB
+MAX_IBD_DAYS = sc.MAX_IBD_DAYS    # beyond this, new operators give up
 
 # ── Upgrade cycle targets ────────────────────────────────────────────
 
-CYCLE_YEARS = [8, 10]
+CYCLE_YEARS = [7, 8, 10]
 
 # ── Hardware improvement rates (annual, compounding) ─────────────────
 # Used ONLY for IBD processing speed — the SSD and RAM are fixed at purchase.
@@ -147,6 +162,17 @@ def max_growth_rate_disk(cycle_years: int, utxo_entries_per_year: int = 8_000_00
     return available_gb / cycle_years
 
 
+def max_growth_rate_disk_no_fs_reserve(
+    cycle_years: int, utxo_entries_per_year: int = 8_000_000
+) -> float:
+    """Disk ceiling if the ext4 root reservation is reclaimed (tune2fs -m 0)."""
+    new_entries = utxo_entries_per_year * cycle_years
+    chainstate_growth_gb = (new_entries * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
+    available_gb = (SSD_GB_NO_FS_RESERVE - CHAIN_SIZE_GB_2026
+                    - CHAINSTATE_GB_2025 - chainstate_growth_gb)
+    return max(0.0, available_gb) / cycle_years
+
+
 # ── Bottleneck 2: IBD time ───────────────────────────────────────────
 
 def max_growth_rate_ibd(cycle_years: int, software_improvement: bool = False) -> float:
@@ -235,10 +261,11 @@ def compute_ceiling(
 
 BIP_OPTIONS = {
     "Current 4MW": {
-        "monetary_only_gb_yr": 55,
-        "current_trajectory_gb_yr": 80,
-        "worst_case_gb_yr": 196,
-        "note": "Current rules. Sustained worst case: inscription-heavy blocks (~3.82 MB avg).",
+        "monetary_only_gb_yr": round(sc.RATE_MONETARY),
+        "current_trajectory_gb_yr": round(sc.RATE_CURRENT),
+        "worst_case_gb_yr": round(sc.RATE_REALISTIC_WORST),
+        "note": f"Current rules. Realistic worst case: inscription-saturated "
+                f"blocks (~{REALISTIC_WORST_MB:.2f} MB avg).",
     },
     "Option B/C/D (~1MB)": {
         "monetary_only_gb_yr": 55,
@@ -257,13 +284,13 @@ BIP_OPTIONS = {
 
 # ── Block size ↔ growth rate ────────────────────────────────────────
 
-BLOCKS_PER_YEAR = 144 * 365  # 52,560
-GB_PER_YEAR_PER_MB_BLOCK = BLOCKS_PER_YEAR / 1024  # ~51.33 GB/yr per 1 MB avg block
+BLOCKS_PER_YEAR = sc.BLOCKS_PER_YEAR
+GB_PER_YEAR_PER_MB_BLOCK = sc.GB_PER_YEAR_PER_MB_BLOCK  # 52.56 GB/yr per 1 MB block
 
 # Observed data points (mempool.space block size report, Glassnode, Dune):
 OBSERVED_AVG_BLOCK_MB_PRE_INSCRIPTION = 1.11   # pre-block 770,000 (before Jan 2023)
-OBSERVED_AVG_BLOCK_MB_CURRENT = 1.69           # current (2025-2026)
-OBSERVED_AVG_BLOCK_MB_PEAK = 2.29              # March 2024 monthly average (ATH)
+OBSERVED_AVG_BLOCK_MB_CURRENT = sc.SCENARIOS["current"]["avg_block_mb"]
+OBSERVED_AVG_BLOCK_MB_PEAK = sc.SCENARIOS["peak"]["avg_block_mb"]
 
 
 # ── Escalation scenarios ───────────────────────────────────────────
@@ -279,28 +306,29 @@ OBSERVED_AVG_BLOCK_MB_PEAK = 2.29              # March 2024 monthly average (ATH
 #   1. Block size sensitivity: what avg block size breaches the ceiling?
 #   2. Ramp model: linear ramp from current rate to target, then sustained.
 
+def _ramp(name, avg_mb, ramp_years, note):
+    """Build a ramp scenario so its label can never disagree with its rate."""
+    return {
+        "label": f"{name} ({avg_mb:.2f} MB avg)",
+        "start_gb_yr": sc.RATE_CURRENT,
+        "end_gb_yr": sc.mb_to_gb_per_year(avg_mb),
+        "ramp_years": ramp_years,
+        "note": note,
+    }
+
+
+_MODERATE_MB = OBSERVED_AVG_BLOCK_MB_PEAK * 1.10
+
 RAMP_SCENARIOS = {
-    "observed_peak": {
-        "label": "Return to observed peak (2.29 MB avg)",
-        "start_gb_yr": 80,
-        "end_gb_yr": 117,
-        "ramp_years": 3,
-        "note": "March 2024 monthly average, sustained. Already happened once.",
-    },
-    "moderate": {
-        "label": "Moderate growth (2.53 MB avg)",
-        "start_gb_yr": 80,
-        "end_gb_yr": 130,
-        "ramp_years": 5,
-        "note": "10% above observed peak. New data protocols + OP_RETURN growth.",
-    },
-    "aggressive": {
-        "label": "Aggressive (2.92 MB avg)",
-        "start_gb_yr": 80,
-        "end_gb_yr": 196,
-        "ramp_years": 3,
-        "note": "Sustained inscription wave at near-full witness capacity.",
-    },
+    "observed_peak": _ramp(
+        "Return to observed peak", OBSERVED_AVG_BLOCK_MB_PEAK, 3,
+        "March 2024 monthly average, sustained. Already happened once."),
+    "moderate": _ramp(
+        "Moderate growth", _MODERATE_MB, 5,
+        "10% above observed peak. New data protocols + OP_RETURN growth."),
+    "aggressive": _ramp(
+        "Realistic worst", REALISTIC_WORST_MB, 3,
+        "Inscription-saturated blocks at the observed 10% image mix."),
 }
 
 
@@ -342,7 +370,9 @@ def print_escalation_analysis():
   Ceiling (10yr, disk):       {ceiling_10yr:.0f} GB/yr
   Ceiling breach at avg block: {ceiling_block_mb:.2f} MB
   Observed peak (Mar 2024):   {OBSERVED_AVG_BLOCK_MB_PEAK} MB → {OBSERVED_AVG_BLOCK_MB_PEAK * GB_PER_YEAR_PER_MB_BLOCK:.0f} GB/yr
-  Gap from peak to ceiling:   {(ceiling_block_mb - OBSERVED_AVG_BLOCK_MB_PEAK) / OBSERVED_AVG_BLOCK_MB_PEAK * 100:.0f}%
+
+  Headroom from today:        {(ceiling_block_mb / OBSERVED_AVG_BLOCK_MB_CURRENT - 1) * 100:.0f}% above the current {OBSERVED_AVG_BLOCK_MB_CURRENT} MB average
+  Headroom from peak:         {(ceiling_block_mb / OBSERVED_AVG_BLOCK_MB_PEAK - 1) * 100:.0f}% (negative = March 2024 already breached it)
 """)
 
     # ── Block size sensitivity ──
@@ -361,8 +391,10 @@ def print_escalation_analysis():
         (ceiling_block_mb, "CEILING BREACH"),
         (2.75, None),
         (3.00, None),
-        (3.82, "Sustained worst case"),
+        (REALISTIC_WORST_MB, "Realistic worst case"),
+        (THEORETICAL_MAX_MB, "Theoretical max (bound)"),
     ]
+    block_sizes.sort(key=lambda r: r[0])
 
     for mb, label in block_sizes:
         rate = mb * GB_PER_YEAR_PER_MB_BLOCK
@@ -391,10 +423,13 @@ def print_escalation_analysis():
           f"{'─' * 10}  {'─' * 11}  {'─' * 8}")
 
     # Baseline: current sustained
-    baseline_total = 80 * 10
+    baseline_total = sc.RATE_CURRENT * 10
     baseline_chain = CHAIN_SIZE_GB_2026 + baseline_total
     baseline_margin = available_10yr - baseline_total
-    print(f"  {'Current sustained (1.56 MB avg)':<42}  {'—':>6}  {'80 GB/yr':>10}  "
+    _base_mb = sc.RATE_CURRENT / GB_PER_YEAR_PER_MB_BLOCK
+    _base_lbl = f"Current sustained ({_base_mb:.2f} MB avg)"
+    _base_rate = f"{sc.RATE_CURRENT:.0f} GB/yr"
+    print(f"  {_base_lbl:<42}  {'—':>6}  {_base_rate:>10}  "
           f"{baseline_total:>8.0f} GB  {baseline_chain:>9.0f} GB  {baseline_margin:>6.0f} GB")
 
     for name, s in RAMP_SCENARIOS.items():
@@ -404,7 +439,7 @@ def print_escalation_analysis():
         chain = CHAIN_SIZE_GB_2026 + total
         margin = available_10yr - total
         ramp_str = f"{s['ramp_years']}yr"
-        rate_str = f"{s['end_gb_yr']} GB/yr"
+        rate_str = f"{s['end_gb_yr']:.0f} GB/yr"
         flag = " !" if margin < 0 else ""
 
         print(f"  {s['label']:<42}  {ramp_str:>6}  {rate_str:>10}  "
@@ -510,7 +545,7 @@ IBD rate (2025):  {IBD_RATE_GB_PER_HOUR_2025:.0f} GB/hr ({CHAIN_SIZE_GB_2026/IBD
     print(f"  {'Growth rate':<15}  {'Chain at yr 8':>14}  {'IBD at yr 8':>12}  "
           f"{'Chain at yr 10':>15}  {'IBD at yr 10':>13}")
     print("  " + "─" * 75)
-    for growth in [31, 55, 80, 100, 130, 196]:
+    for growth in [31, 55, 80, 100, 130, round(sc.RATE_REALISTIC_WORST)]:
         for cy in CYCLE_YEARS:
             chain = CHAIN_SIZE_GB_2026 + growth * cy
             ibd_days = chain / IBD_RATE_GB_PER_HOUR_2025 / 24
@@ -633,9 +668,10 @@ The ceiling is {conservative['ceiling_gb_yr']:.0f}-{relaxed['ceiling_gb_yr']:.0f
 Disk is the binding constraint — IBD is comfortably looser.
 
   Current 4MW rules:
-    Monetary-only (55 GB/yr):  well below ceiling — SAFE
-    Current trajectory (80 GB/yr): below ceiling — PASSES
-    Worst case (196 GB/yr): FAILS the 10yr ceiling ({conservative['ceiling_gb_yr']:.0f} GB/yr)
+    Monetary-only ({sc.RATE_MONETARY:.0f} GB/yr):  well below ceiling — SAFE
+    Current trajectory ({sc.RATE_CURRENT:.0f} GB/yr): below ceiling — PASSES
+    Realistic worst ({sc.RATE_REALISTIC_WORST:.0f} GB/yr): FAILS the 10yr ceiling ({conservative['ceiling_gb_yr']:.0f} GB/yr)
+    Theoretical max ({sc.RATE_THEORETICAL_MAX:.0f} GB/yr): FAILS — this is the bound, not a forecast
 
   Options B/C/D (1MB paid-byte):
     Current trajectory (55 GB/yr): well below ceiling — SAFE
@@ -651,7 +687,7 @@ THE DECISIVE QUESTION
 Current rules PASS at current trajectory. The ceiling doesn't bite today.
 But the ceiling analysis reveals something else:
 
-  1. Without the BIP, worst-case 4MW (196 GB/yr) FAILS the 10yr ceiling.
+  1. Without the BIP, realistic-worst 4MW ({sc.RATE_REALISTIC_WORST:.0f} GB/yr) FAILS the 10yr ceiling.
      This means the protocol is not ROBUST to abuse — one sustained
      inscription wave can push growth past the ceiling.
 

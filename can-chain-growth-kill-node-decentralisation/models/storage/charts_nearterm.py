@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
 from chart_style import (
-    CEIL_LINE_BASE, CHAIN_COLOR, CHAIN_COLOR_MAX,
-    CHAIN_LW_CONS, CHAIN_LW_BASE, CHAIN_LW_MAX,
+    CEIL_LINE_BASE, CHAIN_RAMP, CHAIN_LW, BOUND_COLOR, BOUND_LS,
+    REF_COLOR, REF_LW,
     LABEL_FONTSIZE, LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
     GRID_ALPHA, save,
 )
@@ -24,17 +25,36 @@ from chart_style import (
 START_YEAR = 2026
 YEARS = 10
 
-CHAIN_GB_2026 = 724.0
-CHAINSTATE_GB_2026 = 11.0
-CHAINSTATE_GROWTH = 0.5      # GB/yr at organic monetary rates
-USABLE_GB = 1850.0           # 2 TB minus ext4 reserve, OS, swap, logs
+import model as storage_model
 
+CHAIN_GB_2026 = sc.CHAIN_GB_2026
+CHAINSTATE_GB_2026 = sc.CHAINSTATE_GB_2025
+CHAINSTATE_GROWTH = 0.5      # GB/yr at organic monetary rates
+USABLE_GB = float(sc.SSD_GB)  # 2 TB minus ext4 reserve, OS, swap, logs
+
+CEILING_RATE = storage_model.max_growth_rate_disk(10)
+
+
+def _lab(name, rate):
+    return f"{name}\n{rate:.0f} GB/yr"
+
+
+# Demand scenarios: same weight, coloured by severity along CHAIN_RAMP.
+# Reference lines (a derived threshold and a hard bound) are grey and thinner
+# so they read as the frame rather than as forecasts.
 SCENARIOS = [
-    (55,  "Monetary only\n55 GB/yr",   CHAIN_COLOR,     CHAIN_LW_CONS, ":"),
-    (80,  "Current\n80 GB/yr",         CHAIN_COLOR,     CHAIN_LW_BASE, "--"),
-    (111, "Ceiling rate\n111 GB/yr",   CHAIN_COLOR,     CHAIN_LW_CONS, "-"),
-    (118, "March 2024 peak\n118 GB/yr", CHAIN_COLOR_MAX, CHAIN_LW_CONS, "--"),
-    (196, "Sustained data-heavy\n196 GB/yr",     CHAIN_COLOR_MAX, CHAIN_LW_MAX,  ":"),
+    (sc.RATE_MONETARY, _lab("Monetary only", sc.RATE_MONETARY),
+     CHAIN_RAMP[0], CHAIN_LW, "-"),
+    (sc.RATE_CURRENT, _lab("Current", sc.RATE_CURRENT),
+     CHAIN_RAMP[1], CHAIN_LW, "-"),
+    (sc.RATE_PEAK, _lab("March 2024 peak", sc.RATE_PEAK),
+     CHAIN_RAMP[2], CHAIN_LW, "-"),
+    (sc.RATE_REALISTIC_WORST, _lab("Realistic worst", sc.RATE_REALISTIC_WORST),
+     CHAIN_RAMP[3], CHAIN_LW, "-"),
+    (CEILING_RATE, _lab("Ceiling rate", CEILING_RATE),
+     REF_COLOR, REF_LW, "--"),
+    (sc.RATE_THEORETICAL_MAX, _lab("Theoretical max", sc.RATE_THEORETICAL_MAX),
+     BOUND_COLOR, CHAIN_LW, BOUND_LS),
 ]
 
 

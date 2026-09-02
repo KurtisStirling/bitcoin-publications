@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
 from chart_style import (
     CEIL_LINE_BASE, CEIL_FILL_COLOR, CEIL_FILL_ALPHA,
     CEIL_LW_BASE,
-    CHAIN_COLOR, CHAIN_COLOR_MAX, CHAIN_LW_CONS, CHAIN_LW_BASE, CHAIN_LW_MAX,
+    CHAIN_RAMP, CHAIN_LW,
     LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
     save, smart_labels, group_legend, label_along_curve,
@@ -40,9 +41,9 @@ HW_OPT = 2.0
 HW_BASE = HW_IMPROVEMENT_PER_DECADE  # 1.5
 HW_PESS = 1.2
 
-RATE_WORST = 196
-RATE_PEAK = 118
-RATE_CUR = 80
+RATE_WORST = sc.RATE_REALISTIC_WORST
+RATE_PEAK = sc.RATE_PEAK
+RATE_CUR = sc.RATE_CURRENT
 
 CEIL_SIGOPS = SIGOPS_PER_GB_MIXED
 
@@ -98,12 +99,12 @@ def make_chart():
             linestyle="-", zorder=5)
 
     # Chain growth lines (no fill)
-    ax.plot(dates, ch_cur, color=CHAIN_COLOR, linewidth=CHAIN_LW_CONS,
-            linestyle=":", zorder=5)
-    ax.plot(dates, ch_peak, color=CHAIN_COLOR, linewidth=CHAIN_LW_BASE,
-            linestyle="--", zorder=5)
-    ax.plot(dates, ch_worst, color=CHAIN_COLOR_MAX, linewidth=CHAIN_LW_MAX,
-            linestyle=":", zorder=5)
+    ax.plot(dates, ch_cur, color=CHAIN_RAMP[1], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
+    ax.plot(dates, ch_peak, color=CHAIN_RAMP[2], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
+    ax.plot(dates, ch_worst, color=CHAIN_RAMP[3], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
 
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Chain size (TB)", fontsize=8)
@@ -124,12 +125,12 @@ def make_chart():
     # Chain labels — right edge
     x_end = START_YEAR + TOTAL_YEARS
     smart_labels(ax, dates, [
-        (ch_cur, "Current\n(80 GB/yr)", LABEL_CHAIN_COLOR),
-        (ch_peak, "March 2024 peak\n(118 GB/yr)", LABEL_CHAIN_COLOR),
-        (ch_worst, "Sustained data-heavy\n(196 GB/yr)", LABEL_CHAIN_COLOR),
+        (ch_cur, sc.chart_label("current"), CHAIN_RAMP[1]),
+        (ch_peak, sc.chart_label("peak"), CHAIN_RAMP[2]),
+        (ch_worst, sc.chart_label("realistic_worst"), CHAIN_RAMP[3]),
     ], Y_MAX_TB, x_end)
 
-    group_legend(ax, "7-day processing limit", "Chain size")
+    group_legend(ax, "7-day processing limit", "Chain size", chain_color=CHAIN_RAMP[1])
 
     fig.subplots_adjust(right=0.78)
     save(fig, "fig-ibd")

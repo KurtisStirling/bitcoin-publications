@@ -16,13 +16,17 @@ from pathlib import Path
 
 # ── Constants ────────────────────────────────────────────────────────
 
-SSD_PRICE_2026 = 0.11       # $/GB, SSD anchor point
-USABLE_TB_2026 = 1.85       # known: 2TB SSD minus OS overhead
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import scenarios as sc
 
-CHAIN_GB_2026 = 724.0
-RATE_CURRENT = 80            # GB/yr
-RATE_PEAK = 118              # GB/yr
-RATE_MAX = 196               # GB/yr
+SSD_PRICE_2026 = 0.11       # $/GB, SSD anchor point
+USABLE_TB_2026 = sc.USABLE_TB_2026   # 2TB SSD minus OS overhead
+
+CHAIN_GB_2026 = sc.CHAIN_GB_2026
+RATE_CURRENT = sc.RATE_CURRENT
+RATE_PEAK = sc.RATE_PEAK
+RATE_MAX = sc.RATE_REALISTIC_WORST
 
 # Historical chain size (GB, end of year). Sources: Statista, Blockchain.com
 CHAIN_HISTORY = {
@@ -34,7 +38,9 @@ CHAIN_HISTORY = {
 
 # ── Load data & fit AR(1) ────────────────────────────────────────────
 
-data_path = Path(__file__).resolve().parent.parent.parent.parent.parent / \
+# NOTE: this reads a data file that lives in the private bitcoinx repo, so the
+# published repo is not self-contained for this figure. See ticket 043.
+data_path = Path(__file__).resolve().parents[5] / \
     'models' / 'storage' / 'composite-storage-series.json'
 
 with open(data_path) as f:
@@ -160,7 +166,7 @@ ax.fill_between(future_years, ch_current_tb, ch_peak_tb,
 
 # Peak observed as median-style line
 ax.plot(future_years, ch_peak_tb, '--', color='#F7931A', linewidth=1.5,
-        zorder=5, label='Peak observed (118 GB/yr)')
+        zorder=5, label=f'Peak observed ({RATE_PEAK:.0f} GB/yr)')
 
 # Log scale
 ax.set_yscale('log')

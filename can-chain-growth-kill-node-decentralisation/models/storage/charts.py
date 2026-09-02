@@ -2,7 +2,8 @@
 Storage: node capacity ceiling vs chain growth, 80-year outlook.
 
 1 grey ceiling line + cloud (HW growth rates).
-3 orange chain lines (growth scenarios). Smart labels at exit points.
+3 orange chain lines (demand scenarios) plus a solid bound line.
+Smart labels at exit points.
 """
 
 import pathlib
@@ -12,10 +13,11 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
 from chart_style import (
     CEIL_LINE_BASE, CEIL_FILL_COLOR, CEIL_FILL_ALPHA,
     CEIL_LW_BASE,
-    CHAIN_COLOR, CHAIN_COLOR_MAX, CHAIN_LW_CONS, CHAIN_LW_BASE, CHAIN_LW_MAX,
+    CHAIN_RAMP, CHAIN_LW, BOUND_COLOR, BOUND_LS,
     LABEL_FONTSIZE, LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
     save, smart_labels, group_legend, label_along_curve,
@@ -23,8 +25,8 @@ from chart_style import (
 
 # ── Constants ─────────────────────────────────────────────────────────
 
-CHAIN_GB_2026 = 724.0
-DEVICE_0_TB = 1.85  # 2 TB NVMe minus ext4 reserved (5%, 100 GB) minus OS/swap/logs (50 GB)
+CHAIN_GB_2026 = sc.CHAIN_GB_2026
+DEVICE_0_TB = sc.USABLE_TB_2026  # 2 TB NVMe minus ext4 reserve and OS/swap/logs
 UPGRADE_INTERVAL = 10
 Y_MAX_TB = 18
 
@@ -32,9 +34,15 @@ HW_RATE_OPTIMISTIC = 0.15
 HW_RATE_BASE = 0.10
 HW_RATE_PESSIMISTIC = 0.05
 
-RATE_WORST = 196
-RATE_PEAK = 118
-RATE_CURRENT = 80
+RATE_MAX = sc.RATE_THEORETICAL_MAX       # bound, not a demand scenario
+
+# Demand scenarios, mild to severe. Order matches CHAIN_RAMP.
+DEMAND = [
+    (sc.RATE_MONETARY, "monetary"),
+    (sc.RATE_CURRENT, "current"),
+    (sc.RATE_PEAK, "peak"),
+    (sc.RATE_REALISTIC_WORST, "realistic_worst"),
+]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────
@@ -75,9 +83,9 @@ def make_chart(hw_cap_fn, suffix, footnote=None, label_min_gap=None):
     hw_base = np.array([hw_cap_fn(y, HW_RATE_BASE) for y in t])
     hw_pess = np.array([hw_cap_fn(y, HW_RATE_PESSIMISTIC) for y in t])
 
-    ch_worst = np.array([chain_tb(y, RATE_WORST) for y in t])
-    ch_peak = np.array([chain_tb(y, RATE_PEAK) for y in t])
-    ch_cur = np.array([chain_tb(y, RATE_CURRENT) for y in t])
+    ch_max = np.array([chain_tb(y, RATE_MAX) for y in t])
+    demand = [(np.array([chain_tb(y, r) for y in t]), key)
+              for r, key in DEMAND]
 
     fig, ax = plt.subplots(figsize=FIGSIZE)
 
@@ -90,13 +98,14 @@ def make_chart(hw_cap_fn, suffix, footnote=None, label_min_gap=None):
     ax.plot(dates, hw_base, color=CEIL_LINE_BASE, linewidth=CEIL_LW_BASE,
             linestyle="-", zorder=5)
 
-    # Chain growth lines (no fill)
-    ax.plot(dates, ch_cur, color=CHAIN_COLOR, linewidth=CHAIN_LW_CONS,
-            linestyle=":", zorder=5)
-    ax.plot(dates, ch_peak, color=CHAIN_COLOR, linewidth=CHAIN_LW_BASE,
-            linestyle="--", zorder=5)
-    ax.plot(dates, ch_worst, color=CHAIN_COLOR_MAX, linewidth=CHAIN_LW_MAX,
-            linestyle=":", zorder=5)
+    # Demand scenarios: same weight, coloured by severity.
+    for (series, _), colour in zip(demand, CHAIN_RAMP):
+        ax.plot(dates, series, color=colour, linewidth=CHAIN_LW,
+                linestyle="-", zorder=5)
+
+    # The theoretical maximum is a bound, not a demand scenario.
+    ax.plot(dates, ch_max, color=BOUND_COLOR, linewidth=CHAIN_LW,
+            linestyle=BOUND_LS, zorder=5)
 
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Storage (TB)", fontsize=8)
@@ -117,13 +126,13 @@ def make_chart(hw_cap_fn, suffix, footnote=None, label_min_gap=None):
 
     # Chain labels — right edge
     x_end = START_YEAR + TOTAL_YEARS
-    smart_labels(ax, dates, [
-        (ch_cur, "Current\n(80 GB/yr)", LABEL_CHAIN_COLOR),
-        (ch_peak, "March 2024 peak\n(118 GB/yr)", LABEL_CHAIN_COLOR),
-        (ch_worst, "Sustained data-heavy\n(196 GB/yr)", LABEL_CHAIN_COLOR),
-    ], Y_MAX_TB, x_end, min_gap=label_min_gap)
+    items = [(series, sc.chart_label(key), colour)
+             for (series, key), colour in zip(demand, CHAIN_RAMP)]
+    items.append((ch_max, sc.chart_label("theoretical_max"), BOUND_COLOR))
+    smart_labels(ax, dates, items, Y_MAX_TB, x_end, min_gap=label_min_gap)
 
-    group_legend(ax, "Node storage capacity", "Chain growth")
+    group_legend(ax, "Node storage capacity", "Chain growth",
+                 chain_color=CHAIN_RAMP[1])
 
     if footnote:
         fig.text(0.5, -0.02, footnote, ha="center", fontsize=6.5,

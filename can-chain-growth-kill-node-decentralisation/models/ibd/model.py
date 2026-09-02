@@ -20,15 +20,23 @@ Target upgrade cycle (from Q038): 8-10 years
 
 # ── Baseline (2025) ──────────────────────────────────────────────────
 
-CHAIN_SIZE_GB_2026 = 724.0
-CHAINSTATE_GB_2025 = 11.0        # UTXO set on-disk (LevelDB)
-UTXO_SET_ENTRIES_2025 = 169_000_000
-BYTES_PER_UTXO_ENTRY = 63        # measured: 11 GB / 173M entries (Apr 2025)
+# Baselines and scenarios live in models/scenarios.py. Do not redefine here.
+
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
+
+CHAIN_SIZE_GB_2026 = sc.CHAIN_GB_2026
+CHAINSTATE_GB_2025 = sc.CHAINSTATE_GB_2025
+UTXO_SET_ENTRIES_2025 = sc.UTXO_SET_ENTRIES_2025
+BYTES_PER_UTXO_ENTRY = sc.BYTES_PER_UTXO_ENTRY
 
 # ── Target hardware ($300, static purchase) ──────────────────────────
 
-SSD_GB = 1850       # 2 TB NVMe minus ext4 reserved (5%, 100 GB) minus OS/swap/logs (50 GB)
-MAX_IBD_DAYS = 7    # psychological barrier
+SSD_GB = sc.SSD_GB
+MAX_IBD_DAYS = sc.MAX_IBD_DAYS
 
 # ── IBD rate components (N100 mini-PC, NVMe SSD) ─────────────────────
 # The blended rate (12 GB/hr = ~2.5 days for 724 GB) decomposes into:
@@ -48,7 +56,7 @@ MAX_IBD_DAYS = 7    # psychological barrier
 # for current block composition. CPU only becomes the FV bottleneck for
 # pure monetary blocks: 13,000 * 3600 / 5,000,000 = 9.4 GB/hr < 12.
 
-IBD_RATE_AV_GB_PER_HR = 12.0       # I/O bound, calibrated to observed N100 IBD
+IBD_RATE_AV_GB_PER_HR = sc.IBD_RATE_GB_PER_HR   # I/O bound, observed N100 IBD
 AV_WINDOW_MONTHS = 6               # AssumeValid checkpoint lag behind tip
 
 # ── CPU: signature verification ──────────────────────────────────────
@@ -109,7 +117,7 @@ UPGRADE_INTERVAL_YEARS = 10
 
 # ── Misc ────────────────────────────────────────────────────────────
 
-BLOCKS_PER_YEAR = 144 * 365  # 52,560
+BLOCKS_PER_YEAR = sc.BLOCKS_PER_YEAR
 
 # ── UTXO scenarios (from ceiling.py) ────────────────────────────────
 
@@ -123,22 +131,27 @@ UTXO_SCENARIOS = {
 
 IBD_SCENARIOS = {
     "Unrestricted monetary": {
-        "growth_gb_yr": 55,
+        "growth_gb_yr": sc.RATE_MONETARY,
         "sigops_per_gb_new": SIGOPS_PER_GB_MONETARY,
         "note": "Current rules, only monetary txs fill blocks.",
     },
     "Unrestricted current": {
-        "growth_gb_yr": 80,
+        "growth_gb_yr": sc.RATE_CURRENT,
         "sigops_per_gb_new": SIGOPS_PER_GB_MIXED,
         "note": "Current trajectory: mixed monetary + inscription.",
     },
-    "Unrestricted worst": {
-        "growth_gb_yr": 150,
+    "Realistic worst": {
+        "growth_gb_yr": sc.RATE_REALISTIC_WORST,
         "sigops_per_gb_new": SIGOPS_PER_GB_INSCRIPTION,
-        "note": "Inscription-heavy full blocks under current 4MW rules.",
+        "note": "Inscription-saturated blocks at the observed 10% image mix.",
+    },
+    "Theoretical max": {
+        "growth_gb_yr": sc.RATE_THEORETICAL_MAX,
+        "sigops_per_gb_new": SIGOPS_PER_GB_INSCRIPTION,
+        "note": "4M weight units of pure witness data. A bound, not a forecast.",
     },
     "Capped monetary": {
-        "growth_gb_yr": 55,
+        "growth_gb_yr": sc.RATE_MONETARY,
         "sigops_per_gb_new": SIGOPS_PER_GB_MONETARY,
         "note": "BIP cap active, only monetary txs.",
     },
@@ -329,7 +342,7 @@ def print_two_phase_analysis():
         print("─" * 100)
 
         for name, s in IBD_SCENARIOS.items():
-            print(f"\n  {name} ({s['growth_gb_yr']} GB/yr, "
+            print(f"\n  {name} ({s['growth_gb_yr']:.0f} GB/yr, "
                   f"{s['sigops_per_gb_new']/1e6:.1f}M sigops/GB)")
             print(f"  {s['note']}")
             print()
@@ -369,7 +382,7 @@ def print_sig_density_comparison():
     year = 10
 
     pairs = [
-        ("Unrestricted worst", "Capped worst"),
+        ("Realistic worst", "Capped worst"),
         ("Unrestricted current", "Capped monetary"),
     ]
 
@@ -471,7 +484,9 @@ def print_ibd_ceiling_table():
 
     print()
     print("  With software improvement: all IBD ceilings exceed disk. Disk binds.")
-    print("  Static hardware: full monetary (116 GB/yr) dips below disk (129 GB/yr).")
+    print(f"  Static hardware: full monetary "
+          f"({max_growth_rate_ibd(10, SIGOPS_PER_GB_MONETARY, software_improvement=False):.0f}"
+          f" GB/yr) vs disk ({disk_ceiling_10yr:.0f} GB/yr).")
     print("  But this is the most conservative combo (max sig density + no SW gains).")
     print("  In practice, disk is the binding constraint for realistic scenarios.")
     print()
@@ -503,7 +518,7 @@ def print_mitigation_impact():
     print("  " + "─" * 75)
 
     for yr in years:
-        for name in ["Unrestricted current", "Unrestricted worst"]:
+        for name in ["Unrestricted current", "Realistic worst"]:
             s = IBD_SCENARIOS[name]
             p = ibd_projection(s["growth_gb_yr"], s["sigops_per_gb_new"], yr,
                                software_improvement=True)
@@ -546,11 +561,11 @@ def print_key_finding():
         10, SIGOPS_PER_GB_MONETARY, software_improvement=False)
 
     # Spot-check: year 10 for key scenarios
-    uw = ibd_projection(150, SIGOPS_PER_GB_INSCRIPTION, 10,
+    uw = ibd_projection(sc.RATE_REALISTIC_WORST, SIGOPS_PER_GB_INSCRIPTION, 10,
                          software_improvement=False)
     cw = ibd_projection(100, SIGOPS_PER_GB_CAPPED_WORST, 10,
                          software_improvement=False)
-    uw_sw = ibd_projection(150, SIGOPS_PER_GB_INSCRIPTION, 10,
+    uw_sw = ibd_projection(sc.RATE_REALISTIC_WORST, SIGOPS_PER_GB_INSCRIPTION, 10,
                             software_improvement=True)
 
     print(f"""
@@ -569,7 +584,7 @@ IBD CEILING vs DISK CEILING (10yr, realistic UTXO)
 YEAR 10 SPOT CHECK (static hardware)
 =====================================
 
-  Unrestricted worst (196 GB/yr, inscription-heavy):
+  Realistic worst ({sc.RATE_REALISTIC_WORST:.0f} GB/yr, inscription-saturated):
     Chain: {uw['chain_gb']:.0f} GB, AV: {uw['av_hours']:.1f}h, FV: {uw['fv_hours']:.1f}h
     Total: {uw['total_days']:.1f} days — FV bottleneck: {uw['fv_bottleneck']}
 
@@ -579,7 +594,7 @@ YEAR 10 SPOT CHECK (static hardware)
 
   Near-identical. The volume vs density polarity is a near-wash.
 
-  With +5%/yr software improvement, unrestricted worst drops to
+  With +5%/yr software improvement, realistic worst drops to
   {uw_sw['total_days']:.1f} days — well within 7-day threshold.
 
 THE POLARITY NEAR-WASH
