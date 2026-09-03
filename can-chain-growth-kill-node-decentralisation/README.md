@@ -166,11 +166,11 @@ This is the useful part of the new long-run argument: the storage requirement is
 
 Cheap storage does not currently look like a smooth exponential trend. Consumer SSD prices bottomed around $0.05/GB in mid-2023 and had risen to about $0.11/GB by January 2026. NAND input prices also rose sharply through 2025 as AI-related demand competed for manufacturing capacity [\[3\]](#ref-3)[\[4\]](#ref-4)[\[31\]](#ref-31)[\[32\]](#ref-32)[\[33\]](#ref-33).
 
-The model therefore uses three starting improvement rates, **5%, 10% and 15% per year**, with each rate decaying by 2% of itself each year. The 10% base case is anchored to the observed 2014–2026 CAGR of about 10.2%; the 5% case is close to the much weaker 2019–2026 period.
+The model therefore uses three starting improvement rates, **5%, 10% and 15% per year**, each decaying toward a long-run floor of 2%, 7% and 10%. The 10% base case is anchored to the observed 2014–2026 CAGR of about 10.2%; the 5% case is close to the much weaker 2019–2026 period. Appendix C.4 gives the floors and where they come from.
 
 ![Node storage capacity against chain growth across eight decades and three improvement rates](figures/fig-storage.png)
 
-*The cross-generational view: stepped capacity, one purchase every ten years, against linear chain growth. Model: [`models/storage/charts.py`](models/storage/charts.py).*
+*The cross-generational view: stepped capacity, one purchase every ten years, against linear chain growth. The vertical axis is logarithmic, so each gridline is ten times the one below, and the capacity cloud runs off the top. Model: [`models/storage/charts.py`](models/storage/charts.py).*
 
 The chart shows why the long run is more reassuring in the base case. When cheap storage improves fast enough, capacity pulls away from linear chain growth and later hardware generations gain headroom.
 
@@ -430,13 +430,17 @@ The OP_RETURN row is the clearest illustration of the witness discount. Non-witn
 
 ### C.4 Storage-improvement assumptions
 
-| Scenario | Initial rate | Anchor | Rationale |
-|---|---|---|---|
-| Optimistic | 15%/yr | 2011–2026 CAGR (17.6%) | Shortage normalises and NAND scaling continues, but not at earlier peak rates |
-| Base | 10%/yr | 2014–2026 CAGR (10.2%) | Twelve observed years through two shortage cycles |
-| Pessimistic | 5%/yr | 2019–2026 CAGR (4.3%) | Structural AI demand and weaker NAND cost improvement persist |
+| Scenario | Initial rate | Long-run floor | Rate anchor | Floor anchor |
+|---|---|---|---|---|
+| Optimistic | 15%/yr | 10%/yr | 2011–2026 CAGR (17.6%) | Middle of the National Academies 7–15%/yr projection for all storage technologies [\[8\]](#ref-8) |
+| Base | 10%/yr | 7%/yr | 2014–2026 CAGR (10.2%) | Bottom of that same band, and what HDD cost per gigabyte delivered through the 2010s |
+| Pessimistic | 5%/yr | 2%/yr | 2019–2026 CAGR (4.3%) | Top of the stall band in the table below |
 
-The model decays each annual improvement rate by 2% of itself per year. This detail matters to the asymptotic argument: a rate can remain positive in every year while still shrinking quickly enough that cumulative capacity improvement does not grow without limit. The model therefore should not be described as proving that "any positive storage improvement eventually wins".
+Each rate closes 2% of its remaining gap to its floor every year, so improvement decelerates without stopping. The decay figure and the pessimistic floor share a number and are not the same thing: 2% is how fast a rate approaches its floor, and the floor is where it settles.
+
+An earlier version of this model decayed every rate toward zero. That was harsher than any published long-range forecast. From year 30 on it put even the optimistic case below the most pessimistic external estimate the model had been checked against, and it made cumulative capacity improvement converge to a finite ceiling whatever rate you started from.
+
+With floors, cumulative improvement in the optimistic and base cases has no ceiling, so linear chain growth is eventually overtaken in both. That follows from assuming a positive floor. Whether improvement really settles at one is what the stall scenario below denies, and this paper does not measure it.
 
 The original forecast communication scenarios are retained below. The probabilities are informed estimates, not model output.
 

@@ -1,9 +1,12 @@
 """
 Storage: node capacity ceiling vs chain growth, 80-year outlook.
 
-1 grey ceiling line + cloud (HW growth rates).
-3 orange chain lines (demand scenarios) plus a solid bound line.
-Smart labels at exit points.
+Grey capacity cloud with a base line and a labelled pessimistic bound,
+against three chain-growth scenarios.
+
+Log vertical axis. On a linear axis capped at 18 TB the optimistic ceiling
+left the plot in 2046 and the base ceiling in 2056, so two of the three
+improvement rates the caption promised were invisible for most of the chart.
 """
 
 import pathlib
@@ -17,56 +20,34 @@ import scenarios as sc
 from chart_style import (
     CEIL_LINE_BASE, CEIL_FILL_COLOR, CEIL_FILL_ALPHA,
     CEIL_LW_BASE,
-    CHAIN_RAMP, CHAIN_LW, BOUND_COLOR, BOUND_LS,
-    LABEL_FONTSIZE, LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
+    CHAIN_RAMP, CHAIN_LW,
+    LABEL_FONTSIZE, LABEL_CEIL_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
-    save, smart_labels, group_legend, label_along_curve,
+    save, smart_labels, group_legend,
 )
 
 # ── Constants ─────────────────────────────────────────────────────────
 
 CHAIN_GB_2026 = sc.CHAIN_GB_2026
-DEVICE_0_TB = sc.USABLE_TB_2026  # 2 TB NVMe minus ext4 reserve and OS/swap/logs
-UPGRADE_INTERVAL = 10
-Y_MAX_TB = 18
+Y_MAX_TB = 18       # linear variant only
 
-HW_RATE_OPTIMISTIC = 0.15
-HW_RATE_BASE = 0.10
-HW_RATE_PESSIMISTIC = 0.05
+# Top of the log axis. True auto-scaling now reaches ~32,000 TB, which pushes
+# every chain line and the pessimistic ceiling into the bottom fifth of the
+# plot. 1,000 TB keeps the cloud running off the top without crushing the part
+# anyone reads.
+Y_TOP_LOG_TB = 1000
 
-RATE_MAX = sc.RATE_THEORETICAL_MAX       # bound, not a demand scenario
-
-# Demand scenarios, mild to severe. Order matches CHAIN_RAMP.
+# Demand scenarios, mild to severe, paired with steps of the severity ramp.
+# The theoretical maximum is not drawn: on a log axis it sits within 10% of
+# the realistic worst case, so it costs a line and a label to show nothing.
+# Section 4 states the 210 GB/year envelope in prose with its BIP-141 cite.
 DEMAND = [
-    (sc.RATE_MONETARY, "monetary"),
-    (sc.RATE_CURRENT, "current"),
-    (sc.RATE_PEAK, "peak"),
-    (sc.RATE_REALISTIC_WORST, "realistic_worst"),
+    ("monetary", CHAIN_RAMP[1]),
+    ("current", CHAIN_RAMP[2]),
+    ("realistic_worst", CHAIN_RAMP[3]),
 ]
 
-
-# ── Helpers ───────────────────────────────────────────────────────────
-
-def hw_cap_tb_stepped(t, rate):
-    upgrades = int(t) // UPGRADE_INTERVAL
-    return DEVICE_0_TB * (1 + rate) ** (upgrades * UPGRADE_INTERVAL)
-
-
-def hw_cap_tb_smooth(t, rate):
-    return DEVICE_0_TB * (1 + rate) ** t
-
-
-DECAY_RATE = 0.02  # rate shrinks by 2% of itself each year
-
-
-def hw_cap_tb_stepped_decay(t, rate, decay=DECAY_RATE):
-    """Decaying-rate stepped: rate shrinks each year, upgrade every interval."""
-    upgrades = int(t) // UPGRADE_INTERVAL
-    effective_years = upgrades * UPGRADE_INTERVAL
-    cap = DEVICE_0_TB
-    for y in range(effective_years):
-        cap *= (1 + rate * (1 - decay) ** y)
-    return cap
+CEILINGS = ["optimistic", "base", "pessimistic"]
 
 
 def chain_tb(t, growth):
@@ -75,61 +56,77 @@ def chain_tb(t, growth):
 
 # ── Chart ─────────────────────────────────────────────────────────────
 
-def make_chart(hw_cap_fn, suffix, footnote=None, label_min_gap=None):
+def make_chart(suffix="", footnote=None, label_min_gap=None, log=False,
+               log_top=Y_TOP_LOG_TB):
     t = np.linspace(0, TOTAL_YEARS, TOTAL_YEARS * 100 + 1)
     dates = START_YEAR + t
 
-    hw_opt = np.array([hw_cap_fn(y, HW_RATE_OPTIMISTIC) for y in t])
-    hw_base = np.array([hw_cap_fn(y, HW_RATE_BASE) for y in t])
-    hw_pess = np.array([hw_cap_fn(y, HW_RATE_PESSIMISTIC) for y in t])
-
-    ch_max = np.array([chain_tb(y, RATE_MAX) for y in t])
-    demand = [(np.array([chain_tb(y, r) for y in t]), key)
-              for r, key in DEMAND]
+    ceil = {c: np.array([sc.hw_capacity_tb(c, y) for y in t])
+            for c in CEILINGS}
+    demand = [(np.array([chain_tb(y, sc.SCENARIOS[key]["gb_per_year"])
+                         for y in t]), key, colour)
+              for key, colour in DEMAND]
 
     fig, ax = plt.subplots(figsize=FIGSIZE)
 
     # Ceiling fill between bounds
-    ax.fill_between(dates, hw_pess, hw_opt,
+    ax.fill_between(dates, ceil["pessimistic"], ceil["optimistic"],
                     facecolor=CEIL_FILL_COLOR, edgecolor="none",
                     alpha=CEIL_FILL_ALPHA, zorder=2)
 
-    # Ceiling base line only
-    ax.plot(dates, hw_base, color=CEIL_LINE_BASE, linewidth=CEIL_LW_BASE,
+    ax.plot(dates, ceil["base"], color=CEIL_LINE_BASE, linewidth=CEIL_LW_BASE,
             linestyle="-", zorder=5)
 
-    # Demand scenarios: same weight, coloured by severity.
-    for (series, _), colour in zip(demand, CHAIN_RAMP):
+    for series, _, colour in demand:
         ax.plot(dates, series, color=colour, linewidth=CHAIN_LW,
                 linestyle="-", zorder=5)
-
-    # The theoretical maximum is a bound, not a demand scenario.
-    ax.plot(dates, ch_max, color=BOUND_COLOR, linewidth=CHAIN_LW,
-            linestyle=BOUND_LS, zorder=5)
 
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Storage (TB)", fontsize=8)
     ax.set_xlim(START_YEAR, START_YEAR + TOTAL_YEARS)
-    ax.set_ylim(0, Y_MAX_TB)
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+
+    if log:
+        floor = min(ceil["pessimistic"].min(),
+                    min(s.min() for s, _, _ in demand))
+        ax.set_yscale("log")
+        ax.set_ylim(floor * 0.7,
+                    log_top or ceil["optimistic"].max() * 1.4)
+        ax.yaxis.set_major_locator(ticker.LogLocator(base=10))
+        ax.yaxis.set_minor_locator(
+            ticker.LogLocator(base=10, subs=tuple(np.arange(2, 10) * 0.1),
+                              numticks=100))
+        ax.yaxis.set_major_formatter(
+            ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+        label_ceiling = ax.get_ylim()[1]
+    else:
+        ax.set_ylim(0, Y_MAX_TB)
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
+        label_ceiling = Y_MAX_TB
     ax.yaxis.grid(True, alpha=GRID_ALPHA, linewidth=0.4)
 
-    # Ceiling labels — placed manually inside the grey fill
-    for x, y, label, rot in [
-        (2045, 13, "Optimistic (15%/yr)", 90),
-        (2062, 15.8, "Base (10%/yr)", 0),
-        (2098, 12.5, "Pessimistic (5%/yr)", 0),
-    ]:
-        ax.text(x, y, label, fontsize=LABEL_FONTSIZE, color=LABEL_CEIL_COLOR,
-                ha="center", va="center", rotation=rot)
-
-    # Chain labels — right edge
+    # Labels. Every rate in a label is derived from the rate it names, so a
+    # label can never disagree with its own line.
     x_end = START_YEAR + TOTAL_YEARS
     items = [(series, sc.chart_label(key), colour)
-             for (series, key), colour in zip(demand, CHAIN_RAMP)]
-    items.append((ch_max, sc.chart_label("theoretical_max"), BOUND_COLOR))
-    smart_labels(ax, dates, items, Y_MAX_TB, x_end, min_gap=label_min_gap)
+             for series, key, colour in demand]
+
+    if log:
+        # Everything fits, so all labels go to the right edge and are spaced
+        # there in one pass.
+        items += [(ceil[c], sc.hw_label(c), LABEL_CEIL_COLOR)
+                  for c in CEILINGS]
+    else:
+        for x, y, case, rot in [(2045, 13, "optimistic", 90),
+                                (2062, 15.8, "base", 0),
+                                (2098, 12.5, "pessimistic", 0)]:
+            ax.text(x, y, sc.hw_label(case).replace("\n", " "),
+                    fontsize=LABEL_FONTSIZE, color=LABEL_CEIL_COLOR,
+                    ha="center", va="center", rotation=rot)
+
+    smart_labels(ax, dates, items, label_ceiling, x_end,
+                 min_gap=label_min_gap, log=log)
 
     group_legend(ax, "Node storage capacity", "Chain growth",
                  chain_color=CHAIN_RAMP[1])
@@ -138,17 +135,13 @@ def make_chart(hw_cap_fn, suffix, footnote=None, label_min_gap=None):
         fig.text(0.5, -0.02, footnote, ha="center", fontsize=6.5,
                  color="#666666", style="italic")
 
-    fig.subplots_adjust(right=0.78)
+    fig.subplots_adjust(right=0.76)
     save(fig, f"fig-storage{suffix}")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    make_chart(
-        hw_cap_tb_stepped_decay, "",
-        footnote=(
-            "Storage improvement rates decay at 2%/yr.  "
-            "Steps represent a 10-year hardware upgrade cycle."
-        ),
-        label_min_gap=1.5,
-    )
+    # No on-figure footnote. The style spec puts detail in the caption, and
+    # the decay rule, the upgrade cycle and the log axis are all stated in
+    # section 4, appendix C.4 and the figure caption respectively.
+    make_chart(label_min_gap=0.24, log=True)

@@ -98,7 +98,7 @@ LABEL_CHAIN_COLOR = "#C05000"
 
 FIGSIZE = (8, 3.5)
 DPI = 400
-TOTAL_YEARS = 80
+TOTAL_YEARS = 84   # 2026-2110, so the axis ends on a decade tick
 START_YEAR = 2026
 
 GRID_ALPHA = 0.12
@@ -141,30 +141,38 @@ def label_top(ax, x, y, text, color, fontsize=LABEL_FONTSIZE, ha="left"):
             va="bottom", ha=ha, clip_on=False, rotation=0)
 
 
-def labels_right(ax, x, items, min_gap=None):
+def labels_right(ax, x, items, min_gap=None, log=False):
     """Place multiple right-edge labels, nudging apart to avoid collisions.
 
     items: list of (y, text, color) tuples.
-    min_gap: minimum vertical distance between labels (in data units).
-             If None, uses 2.5% of the y-axis range.
+    min_gap: minimum vertical distance between labels (in data units, or in
+             decades when log=True). If None, uses 4% of the y-axis range.
+    log: spacing is done in log10 space, so labels stay evenly separated on
+         screen when the axis is logarithmic.
     """
+    import math
+
     if not items:
         return
+
+    fwd = (lambda v: math.log10(v)) if log else (lambda v: v)
+    inv = (lambda v: 10 ** v) if log else (lambda v: v)
+
     if min_gap is None:
         y0, y1 = ax.get_ylim()
-        min_gap = (y1 - y0) * 0.04
+        min_gap = (fwd(y1) - fwd(y0)) * 0.04
 
     # Sort by y position
     sorted_items = sorted(items, key=lambda t: t[0])
 
-    # Nudge apart from bottom up
-    ys = [item[0] for item in sorted_items]
+    # Nudge apart from bottom up, in whatever space the axis is drawn in
+    ys = [fwd(item[0]) for item in sorted_items]
     for i in range(1, len(ys)):
         if ys[i] - ys[i - 1] < min_gap:
             ys[i] = ys[i - 1] + min_gap
 
     for y, (_, text, color) in zip(ys, sorted_items):
-        label_right(ax, x, y, text, color)
+        label_right(ax, x, inv(y), text, color)
 
 
 def label_along_curve(ax, dates, values, text, color,
@@ -274,7 +282,7 @@ def _find_crossing_x(dates, values, threshold):
     return None
 
 
-def smart_labels(ax, dates, lines, y_max, x_end, min_gap=None):
+def smart_labels(ax, dates, lines, y_max, x_end, min_gap=None, log=False):
     """Route labels to top edge or right edge based on where each line exits.
 
     lines: list of (values_array, text, color) tuples.
@@ -302,7 +310,7 @@ def smart_labels(ax, dates, lines, y_max, x_end, min_gap=None):
 
     # Place right-edge labels with collision avoidance
     if right_items:
-        labels_right(ax, x_end, right_items, min_gap=min_gap)
+        labels_right(ax, x_end, right_items, min_gap=min_gap, log=log)
 
     # Place top-edge labels with position-based alignment
     if top_items:

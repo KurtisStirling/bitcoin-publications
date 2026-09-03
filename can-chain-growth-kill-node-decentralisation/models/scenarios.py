@@ -220,6 +220,66 @@ RATE_PEAK = SCENARIOS["peak"]["gb_per_year"]
 RATE_REALISTIC_WORST = SCENARIOS["realistic_worst"]["gb_per_year"]
 RATE_THEORETICAL_MAX = SCENARIOS["theoretical_max"]["gb_per_year"]
 
+
+# ── Storage improvement scenarios ────────────────────────────────────
+#
+# Each annual improvement rate decays toward a long-run floor:
+#
+#     rate(t) = floor + (start - floor) * (1 - HW_DECAY_RATE) ** t
+#
+# The decay rate and the floors are different quantities that happen to
+# share a number in the pessimistic case. HW_DECAY_RATE is how fast a rate
+# closes the gap to its floor; the floor is where it settles.
+#
+# Floors are what improvement settles at once the current technology's
+# S-curve is exhausted. Each one points at a source:
+#
+#   10%  middle of the National Academies (2024) projection of 2-4x per
+#        decade for all storage technologies combined, i.e. 7-15%/yr
+#    7%  bottom of that same band, and what HDD $/GB delivered through the
+#        2010s (research/storage-capacity-per-dollar.md section 9)
+#    2%  top of the paper's own stall band (appendix C.4), where no
+#        successor technology reaches consumer pricing
+#
+# Before this existed, the rates and the decay rule lived only in
+# storage/charts.py and appendix C.4 restated them by hand. An earlier
+# version decayed every rate toward zero, which put the optimistic case
+# below the most pessimistic published forecast from year 30 on.
+
+HW_DECAY_RATE = 0.02       # fraction of the remaining gap closed each year
+HW_UPGRADE_INTERVAL = 10   # years between disk replacements
+
+HW_IMPROVEMENT = {
+    "optimistic":  {"start": 0.15, "floor": 0.10},
+    "base":        {"start": 0.10, "floor": 0.07},
+    "pessimistic": {"start": 0.05, "floor": 0.02},
+}
+
+
+def hw_rate(case: str, year: int) -> float:
+    """Annual storage improvement rate for one scenario in a given year."""
+    s = HW_IMPROVEMENT[case]
+    return s["floor"] + (s["start"] - s["floor"]) * (1 - HW_DECAY_RATE) ** year
+
+
+def hw_capacity_tb(case: str, year: float, usable_tb: float = None,
+                   upgrade_interval: int = HW_UPGRADE_INTERVAL) -> float:
+    """
+    Usable capacity in TB after replacing the disk every upgrade_interval
+    years, each replacement buying whatever the improvement rate has
+    compounded to by then.
+    """
+    cap = USABLE_TB_2026 if usable_tb is None else usable_tb
+    for y in range((int(year) // upgrade_interval) * upgrade_interval):
+        cap *= (1 + hw_rate(case, y))
+    return cap
+
+
+def hw_label(case: str) -> str:
+    """Chart label for a storage scenario, derived from its own rates."""
+    s = HW_IMPROVEMENT[case]
+    return f"{case.capitalize()}\n({s['start']:.0%} to {s['floor']:.0%}/yr)"
+
 # Observed trajectory, measured directly from chain size rather than inferred
 # from average block size. Kept separate from RATE_CURRENT because they answer
 # different questions: this is what happened, RATE_CURRENT is what today's
