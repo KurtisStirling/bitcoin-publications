@@ -141,36 +141,25 @@ UTXO_SCENARIOS = {
 
 # ── Bottleneck 1: Disk ───────────────────────────────────────────────
 
-def max_growth_rate_disk(cycle_years: int, utxo_entries_per_year: int = 8_000_000) -> float:
+def max_growth_rate_disk(cycle_years: int,
+                         utxo_entries_per_year: int = sc.UTXO_ENTRIES_PER_YEAR) -> float:
     """
-    Max chain growth GB/year before 2TB SSD fills.
+    Max chain growth GB/year before the 2TB SSD fills.
 
-    Total disk = chain data + chainstate (UTXO set on disk).
-    Chainstate growth is small but real — subtract it from available space.
+    Total disk = chain data + chainstate (UTXO set on disk). Chainstate growth
+    is small but real, so it comes off the available space. The arithmetic
+    lives in scenarios.py because the IBD and bandwidth models quote the same
+    ceiling and must not keep their own copies of it.
     """
-    # Chainstate growth over the cycle
-    new_entries = utxo_entries_per_year * cycle_years
-    chainstate_growth_gb = (new_entries * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
-    chainstate_at_end = CHAINSTATE_GB_2025 + chainstate_growth_gb
-
-    # Available for chain data = SSD - current chain - current chainstate - chainstate growth
-    available_gb = SSD_GB - CHAIN_SIZE_GB_2026 - CHAINSTATE_GB_2025 - chainstate_growth_gb
-
-    if available_gb <= 0:
-        return 0.0
-
-    return available_gb / cycle_years
+    return sc.disk_ceiling_gb_per_year(cycle_years, utxo_entries_per_year)
 
 
 def max_growth_rate_disk_no_fs_reserve(
-    cycle_years: int, utxo_entries_per_year: int = 8_000_000
+    cycle_years: int, utxo_entries_per_year: int = sc.UTXO_ENTRIES_PER_YEAR
 ) -> float:
     """Disk ceiling if the ext4 root reservation is reclaimed (tune2fs -m 0)."""
-    new_entries = utxo_entries_per_year * cycle_years
-    chainstate_growth_gb = (new_entries * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
-    available_gb = (SSD_GB_NO_FS_RESERVE - CHAIN_SIZE_GB_2026
-                    - CHAINSTATE_GB_2025 - chainstate_growth_gb)
-    return max(0.0, available_gb) / cycle_years
+    return sc.disk_ceiling_gb_per_year(cycle_years, utxo_entries_per_year,
+                                       usable_gb=sc.SSD_GB_NO_FS_RESERVE)
 
 
 # ── Bottleneck 2: IBD time ───────────────────────────────────────────
@@ -209,7 +198,7 @@ def utxo_projection(entries_per_year: int, years: int) -> dict:
     """Project UTXO set size after N years of linear growth."""
     new_entries = entries_per_year * years
     total_entries = UTXO_SET_ENTRIES_2025 + new_entries
-    chainstate_gb = (total_entries * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
+    chainstate_gb = (total_entries * BYTES_PER_UTXO_ENTRY) / 1e9
     return {
         "total_entries": total_entries,
         "chainstate_gb": chainstate_gb,
@@ -515,7 +504,7 @@ IBD rate (2025):  {IBD_RATE_GB_PER_HOUR_2025:.0f} GB/hr ({CHAIN_SIZE_GB_2026/IBD
     for name, scenario in UTXO_SCENARIOS.items():
         print(f"  {scenario['label']}:")
         print(f"    {scenario['entries_per_year']/1e6:.0f}M entries/yr "
-              f"(~{scenario['entries_per_year'] * BYTES_PER_UTXO_ENTRY / (1024**3):.2f} GB/yr)")
+              f"(~{scenario['entries_per_year'] * BYTES_PER_UTXO_ENTRY / 1e9:.2f} GB/yr)")
         for cy in CYCLE_YEARS:
             p = utxo_projection(scenario["entries_per_year"], cy)
             print(f"    At year {cy}: {p['total_entries']/1e6:.0f}M entries, "

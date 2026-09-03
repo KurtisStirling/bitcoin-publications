@@ -80,7 +80,7 @@ def main():
     ax.axhspan(USABLE_GB, 2800, facecolor="#000000", alpha=0.045, zorder=1)
     ax.axhline(USABLE_GB, color=CEIL_LINE_BASE, linewidth=1.4, zorder=6)
     ax.text(START_YEAR + 0.15, USABLE_GB + 55,
-            "Usable space on a 2 TB SSD — 1,850 GB",
+            "Usable space on a 2 TB SSD: 1,850 GB",
             fontsize=7.5, color=CEIL_LINE_BASE, va="bottom", ha="left")
 
     label_points = []
@@ -120,7 +120,7 @@ def main():
 
     fig.text(0.5, -0.03,
              "Markers show the year each scenario exhausts the disk. "
-             "Hardware held constant — this is one machine, not an upgrade path.",
+             "Hardware held constant. This is one machine, not an upgrade path.",
              ha="center", fontsize=6.5, color="#666666", style="italic")
 
     fig.subplots_adjust(right=0.80)

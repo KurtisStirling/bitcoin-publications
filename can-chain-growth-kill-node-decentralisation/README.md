@@ -12,11 +12,11 @@ All models are standalone Python and live in [`models/`](models). Every modelled
 
 Bitcoin depends on people independently verifying the chain. If doing that requires increasingly expensive hardware or frequent upgrades, fewer people may keep running nodes, making the validator population easier to concentrate or coerce.
 
-I modelled four hardware constraints against a deliberately cheap target: a **$300 archival node with a ten-year service life**. Storage binds first. A 2 TB SSD in the reference machine has room for about **111 GB of chain growth per year** over ten years. The observed trajectory since 2023 is roughly **80 GB/year**. Today's 1.69 MB average block implies about **87 GB/year**, while the ten-year ceiling is crossed at 2.16 MB. March 2024 briefly averaged 2.29 MB, equivalent to about **118 GB/year**. A sustained data-heavy mix averaging 3.82 MB would grow the chain by about **196 GB/year** and fill the reference disk in roughly **5.7 years**.
+I modelled four hardware constraints against a deliberately cheap target: a **$300 archival node with a ten-year service life**. Storage binds first. Once the filesystem, the operating system and the UTXO set have taken their share, the reference machine's 2 TB SSD has room for about **111 GB of chain growth per year** across ten years. Growth since 2023 has run at roughly **80 GB/year** and today's 1.69 MB average block implies about **89 GB/year**, so both fit. The ceiling is crossed at 2.11 MB, 25% above today's average, and March 2024 already averaged 2.29 MB for a month, equivalent to **120 GB/year**. Blocks saturated with inscriptions, at the image mix observed at the 2023 inscription peak, average 3.57 MB. That is **188 GB/year**, and it fills the reference disk in **5.9 years**.
 
 That makes the next hardware cycle less comfortable than the historical trend suggests. It does not mean the storage burden accelerates without limit.
 
-Under the current consensus rules, block weight is limited to 4 million weight units and difficulty targets a roughly ten-minute block interval. At that cadence, even blocks near the maximum witness-heavy size imply chain growth of roughly **205 GB/year**. The exact number of blocks in a calendar year varies, so this is not a literal annual protocol ceiling. The important point is the shape of the problem: unless the block-weight regime changes, sustained chain growth is constrained to be roughly linear rather than exponential.
+Under the current consensus rules block weight is capped at 4 million weight units [\[26\]](#ref-26), and difficulty retargeting aims at a ten-minute block interval rather than enforcing one [\[27\]](#ref-27). At that cadence, a chain of blocks near the maximum witness-heavy size grows by roughly **210 GB/year**. Since the number of blocks in a calendar year varies, that is an upper envelope rather than a protocol ceiling on annual growth. The shape is what matters: unless the block-weight regime changes, sustained chain growth is linear rather than exponential.
 
 A fixed growth rate changes the long-run question. Each hardware generation has to absorb another fixed quantity of chain history. The disk required therefore grows roughly linearly, while storage capacity per dollar can improve multiplicatively. If storage keeps improving at a persistent positive rate, capacity eventually pulls away from chain growth. If improvement stalls, reverses, or decays toward zero quickly enough, it may not. The paper's long-range storage scenarios still matter for that reason.
 
@@ -96,7 +96,7 @@ Each model asks how quickly the chain can grow before one resource breaches the 
 | Constraint | What it limits | Result |
 |---|---|---|
 | **Storage** | Chain size that fits on the 2 TB SSD | **Binding** |
-| IBD processing | Chain processable within seven days | ~117 GB/year ceiling on static hardware |
+| IBD processing | Chain processable within seven days | ~113 GB/year ceiling on static hardware |
 | Bandwidth speed | Chain downloadable within seven days | Not binding for most current residential broadband |
 | UTXO / RAM | Chainstate that can be cached in memory | Performance pressure, not a hard operating cutoff |
 
@@ -122,13 +122,15 @@ This result is arithmetic from the chosen hardware, current chain size and servi
 
 ### Today's margin is small
 
-The observed trajectory since 2023 is roughly **80 GB/year**. Today's 1.69 MB average block implies about **87 GB/year**. Both fit inside the ten-year target.
+The observed trajectory since 2023 is roughly **80 GB/year**, and today's 1.69 MB average block implies about **89 GB/year**. Both fit inside the ten-year target.
 
-The ceiling is crossed at **2.16 MB average blocks**, only 28% above today's average. March 2024 averaged 2.29 MB, equivalent to about **118 GB/year**, although the increase did not persist.
+The ceiling is crossed at **2.11 MB average blocks**, 25% above today's average. March 2024 averaged 2.29 MB, equivalent to **120 GB/year**, so the break point has already been passed for a month at a time. It did not persist.
 
 Blocks have been effectively full by weight since January 2023, so transaction mix now matters more than transaction count for storage. Average block size rose from 1.11 MB in 2022 to 1.69 MB as witness-heavy inscriptions became a larger share of block space [\[38\]](#ref-38)[\[39\]](#ref-39)[\[40\]](#ref-40). OP_RETURN use and direct submission to miners provide other routes for data-heavy transactions [\[41\]](#ref-41).
 
-A sustained inscription-heavy mix averaging **3.82 MB** would produce about **196 GB/year** of chain growth and fill the reference disk in roughly **5.7 years**. That is a deliberately aggressive demand scenario, not a forecast that blocks will remain that large for years.
+Fill those blocks with inscriptions at the image mix observed during the 2023 peak, roughly 10% images by count [\[40\]](#ref-40), and the average block comes out at **3.57 MB**. That is **188 GB/year**, and it exhausts the reference disk in **5.9 years**.
+
+The mix barely matters. Raising the image share from 10% to 100% moves the average block only from 3.57 MB to 3.95 MB, because per-transaction overhead stops counting for anything once payloads are large. So the scenario does not rest on guessing how data-heavy a future regime would be. It rests on blocks staying saturated, which no month on record has managed above 2.29 MB.
 
 The transaction-mix derivation, block-size sensitivity table and deliberate chain-filling costs are in [Appendix C](#appendix-c-supplementary-calculations). The main result does not need them: the current trajectory passes, a modest increase fails the ten-year target, and a sustained data-heavy regime fails it quickly.
 
@@ -146,13 +148,13 @@ The first-cycle result is uncomfortable. Does it keep getting worse forever?
 
 ### The chain cannot grow arbitrarily fast under the current block-weight regime
 
-Bitcoin limits blocks by **weight**, not simply by serialized bytes. Witness data receives a lower weight cost than non-witness data, which is why a witness-heavy block can be much larger on disk than an ordinary monetary block. The consensus limit is 4 million weight units per block.
+Bitcoin limits blocks by **weight**, not simply by serialized bytes. Witness data receives a lower weight cost than non-witness data, which is why a witness-heavy block can be much larger on disk than an ordinary monetary block. The consensus limit is 4 million weight units per block [\[26\]](#ref-26).
 
-At the protocol's target block cadence, a block near the theoretical witness-heavy size corresponds to roughly **205 GB/year** using the same conversion as the storage model. Real block production varies around the ten-minute target, so 205 GB/year should be read as a long-run upper envelope at target cadence rather than a literal calendar-year cap.
+At the protocol's target cadence of 144 blocks a day, a chain of blocks near the theoretical witness-heavy maximum grows by roughly **210 GB/year**, using the same conversion as the storage model. Difficulty retargeting aims at the ten-minute interval rather than enforcing it, and actual production runs slightly above target while hashrate grows [\[27\]](#ref-27), so 210 GB/year is an upper envelope at target cadence rather than a calendar-year cap.
 
 That distinction does not change the structural result. With the weight limit unchanged, bytes added per block are bounded and block production is difficulty-regulated around a stable cadence. Sustained chain growth is therefore constrained to be roughly **linear**.
 
-For a fixed service life, linear growth means each replacement machine has to absorb another roughly fixed quantity of chain history. A ten-year cycle at 205 GB/year adds about 2 TB. A seven-year cycle adds less. Changing the service life changes the size and timing of each step, not the fact that required disk capacity grows roughly linearly.
+For a fixed service life, linear growth means each replacement machine has to absorb another roughly fixed quantity of chain history. A ten-year cycle at the 210 GB/year envelope adds about 2.1 TB. A seven-year cycle adds less. Changing the service life changes the size and timing of each step, not the fact that required disk capacity grows roughly linearly.
 
 This is the useful part of the new long-run argument: the storage requirement is not itself compounding.
 
@@ -198,7 +200,7 @@ Storage is not the only resource that grows with the chain. Do any of the others
 
 *Model: [`models/bandwidth/`](models/bandwidth).*
 
-Following the tip needs little bandwidth compared with IBD. Downloading the current 724 GB chain inside seven days requires about **9.8 Mbps**. Even the data-heavy year-10 scenario requires only around **30 Mbps**.
+Following the tip needs little bandwidth compared with IBD. Downloading the current 724 GB chain inside seven days requires about **9.6 Mbps**, and even the data-heavy year-10 chain of 2,602 GB requires only **34 Mbps**.
 
 Global median residential broadband is roughly 104 Mbps and has been improving faster than chain growth [\[48\]](#ref-48)[\[59\]](#ref-59). Very slow connections already struggle with IBD, but bandwidth speed is not the first constraint to fail in most current node-hosting regions.
 
@@ -210,9 +212,9 @@ Bandwidth **cost** is a separate access problem and is treated in Section 6.
 
 *Model: [`models/ibd/`](models/ibd).*
 
-On the N100 reference machine, IBD processing tracks chain size more closely than transaction composition. Under the current trajectory, year-10 sync time is about **5.6 days**. The data-heavy scenario reaches about **9.9 days**.
+On the N100 reference machine, IBD processing tracks chain size more closely than transaction composition. At today's average block a year-10 sync takes about **6.1 days** against the seven-day target, and at the observed 80 GB/year trajectory about **5.7 days**. The data-heavy scenario reaches **9.8 days**.
 
-The static-hardware ceiling is around **116–117 GB/year**, just above the storage ceiling. Storage therefore fails first in the reference configuration.
+The static-hardware ceiling is **112–113 GB/year**. Storage still fails first, but only by a GB or two per year, which is inside the model's own uncertainty about the N100's sustained IBD rate. The two constraints arrive together rather than in sequence.
 
 IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than requirements for the storage result. Past software optimisation has been important to keeping IBD tractable, and its future rate is uncertain [\[23\]](#ref-23).
 
@@ -252,7 +254,7 @@ The defensible conclusion is therefore about the **shape and severity of the har
 
 The first-cycle storage ceiling moves directly with three assumptions.
 
-A larger budget buys more headroom. Around $400–500 can buy substantially more storage; with 4 TB, the single-cycle problem largely disappears under the scenarios modelled here. A shorter service life also helps: the storage ceiling rises from 111 GB/year at ten years to about 139 GB/year at eight years and 159 GB/year at seven. Reducing filesystem reservation moves the ten-year ceiling only modestly, to roughly 119 GB/year.
+A larger budget buys more headroom. Around $400–500 can buy substantially more storage; with 4 TB, the single-cycle problem largely disappears under the scenarios modelled here. A shorter service life also helps: the storage ceiling rises from 111 GB/year at ten years to about 139 GB/year at eight years and 159 GB/year at seven. Reclaiming the ext4 root reservation moves the ten-year ceiling only modestly, to 121 GB/year.
 
 The long-run result is more sensitive to conditions outside the current model:
 
@@ -280,9 +282,9 @@ The contribution here is narrower: measure the resource burden on a cheap indivi
 
 ## 9. Conclusion
 
-For a **$300 archival node expected to last ten years, storage is the first hardware constraint to bind**. The reference 2 TB SSD can absorb about **111 GB of new chain data per year**. The observed trajectory is below that, but the margin is not large. Today's average block size is only 28% below the break point, March 2024 briefly exceeded it, and a sustained data-heavy mix could cut the reference node's storage life to roughly **5.7 years**.
+For a **$300 archival node expected to last ten years, storage is the first hardware constraint to bind**. The reference 2 TB SSD can absorb about **111 GB of new chain data per year**. The observed trajectory is below that, but the margin is not large. The break point sits 25% above today's average block size, March 2024 briefly exceeded it, and a sustained data-heavy mix could cut the reference node's storage life to **5.9 years**.
 
-Bandwidth speed is less restrictive for most current node-hosting regions. IBD processing reaches its static-hardware limit slightly after storage and has active software mitigations. UTXO growth can slow validation, but does not create the same hard capacity cutoff.
+Bandwidth speed is less restrictive for most current node-hosting regions. IBD processing reaches its static-hardware limit barely after storage, and has active software mitigations. UTXO growth can slow validation, but does not create the same hard capacity cutoff.
 
 The long-run storage problem is easier than the first-cycle numbers make it look, but not because future storage can be assumed to save Bitcoin. The current block-weight regime constrains sustained chain growth to be roughly linear. A fixed service life therefore adds a roughly fixed quantity of history to each replacement cycle rather than a compounding one. If cheap storage keeps improving fast enough, capacity pulls away. The base storage scenario does exactly that.
 
@@ -330,6 +332,7 @@ Standalone Python, no dependencies beyond numpy and matplotlib for chart generat
 
 ```text
 models/
+├── scenarios.py                baselines and the five growth scenarios
 ├── chart_style.py              shared figure styling
 ├── storage/
 │   ├── model.py                storage ceiling
@@ -341,7 +344,7 @@ models/
 └── utxo/      charts.py
 ```
 
-Run any chart script directly to regenerate its figure into `figures/`. `capacity-overlay.py` produces `fig-storage-capacity-probabilistic.png`, supplementary to the charts embedded above.
+Every model imports its baselines and scenario rates from `scenarios.py`, so no rate is asserted twice. Run any chart script directly to regenerate its figure into `figures/`. `capacity-overlay.py` produces `fig-storage-capacity-probabilistic.png`, supplementary to the charts embedded above.
 
 ---
 
@@ -351,13 +354,19 @@ This appendix keeps detailed scenarios and derivations out of the main reading p
 
 ### C.1 Chain-growth scenarios
 
-| Scenario | Chain growth | What it assumes |
-|---|---|---|
-| Monetary only | ~55 GB/year | No data-storage demand, payments and settlement only |
-| Current trajectory | ~80 GB/year | Observed average since 2023 |
-| Sustained data-heavy | ~196 GB/year | Inscription-heavy blocks, ~3.82 MB average |
+Every rate in the paper comes from [`models/scenarios.py`](models/scenarios.py), which converts an average block size to annual growth at target cadence: 1 MB of average block is 52.56 GB/year.
 
-Every full block uses the same 4 million weight-unit budget, but the number of bytes written to disk depends on transaction composition. For the inscription model, each transaction carries 481 weight units of fixed overhead and the remaining weight is payload.
+| Scenario | Avg block | Chain growth | Basis |
+|---|---|---|---|
+| Monetary only | 1.07 MB | 56 GB/yr | No data-storage demand. Payments and settlement only |
+| Current | 1.69 MB | 89 GB/yr | Today's average block. Observed |
+| March 2024 peak | 2.29 MB | 120 GB/yr | Highest monthly average on record. Observed, and it did not persist |
+| Realistic worst | 3.57 MB | 188 GB/yr | Blocks saturated with inscriptions at the observed 10% image share. The composition is observed, the saturation is not |
+| Theoretical max | 3.99 MB | 210 GB/yr | 4 million weight units of pure witness data. A bound, not a forecast |
+
+Chain size has grown at about **80 GB/year** since 2023. That is measured off the chain directly rather than inferred from average block size, so it answers a different question from the 89 GB/year "current" row: one is what happened, the other is what today's blocks imply going forward.
+
+Every full block spends the same 4 million weight-unit budget, but the bytes written to disk depend on what fills it. Witness bytes cost 1 weight unit each, non-witness bytes 4. For the inscription model, each reveal transaction carries 481 weight units of fixed overhead and the rest is payload.
 
 For *N* inscription transactions averaging *D* bytes of payload:
 
@@ -365,33 +374,38 @@ For *N* inscription transactions averaging *D* bytes of payload:
 
 block size = 250 + *N* × (199 + *D*) bytes
 
-| Inscription mix | Avg payload | Txs/block | Block size |
-|---|---|---|---|
-| All BRC-20 text | 75 B | ~7,200 | ~2.0 MB |
-| Observed peak (90% text, 10% images by count) | ~2.2 KB | ~1,500 | ~3.6 MB |
-| Image-heavy (~73% text, ~27% images) | ~5.8 KB | ~635 | **~3.82 MB** |
-| All images | 21 KB | ~186 | ~3.95 MB |
-| Single inscription (Slipstream) | ~4 MB | 1 | ~4.0 MB |
+| Image share (by count) | Avg payload | Txs/block | Block size | Chain growth |
+|---|---|---|---|---|
+| 0% (all BRC-20 text) | 75 B | ~7,190 | 1.97 MB | 104 GB/yr |
+| 5% | 1.1 KB | ~2,500 | 3.30 MB | 173 GB/yr |
+| **10% (observed peak)** | **2.2 KB** | **~1,510** | **3.57 MB** | **188 GB/yr** |
+| 25% | 5.3 KB | ~690 | 3.80 MB | 200 GB/yr |
+| 50% | 10.5 KB | ~360 | 3.90 MB | 205 GB/yr |
+| 100% (all images) | 21 KB | ~186 | 3.95 MB | 207 GB/yr |
 
-BRC-20 mints remain relatively small even when a block is full by weight because transaction overhead is large relative to payload. Images use the weight budget more efficiently as stored bytes. At the observed inscription peak, roughly 10% of inscriptions were images by count. Raising that mix to about 27% produces the 3.82 MB sustained data-heavy scenario. Inscription-size evidence is in [\[40\]](#ref-40).
+BRC-20 mints stay small even in a block that is full by weight, because transaction overhead is large relative to payload. Images carry enough payload for that overhead to stop mattering, which is why the curve flattens so early. By a 10% image share the block is already within 0.4 MB of the all-image case and within 0.5 MB of the weight-limit maximum. The data-heavy scenario therefore does not depend on picking a mix: any sustained inscription regime lands in much the same place, and arithmetic on the weight limit already supplies the bound above it. Inscription-size evidence is in [\[40\]](#ref-40).
 
 ### C.2 Storage sensitivity to average block size
 
+Ten years of growth against the 1,110 GB the reference disk has spare.
+
 | Avg block size | Growth rate | Chain at year 10 | Disk margin | Context |
 |---|---|---|---|---|
-| 1.11 MB | 57 GB/yr | 1,294 GB | 540 GB | Pre-inscription baseline, 2022 |
-| 1.69 MB | 87 GB/yr | 1,591 GB | 243 GB | Current |
-| **2.16 MB** | **111 GB/yr** | **1,834 GB** | **~0 GB** | **Ceiling breach** |
-| 2.29 MB | 118 GB/yr | 1,899 GB | −65 GB | Observed peak, March 2024 |
-| 2.75 MB | 141 GB/yr | 2,136 GB | −302 GB |  |
-| 3.82 MB | 196 GB/yr | 2,680 GB | −892 GB | Sustained data-heavy |
+| 1.11 MB | 58 GB/yr | 1,307 GB | +527 GB | Pre-inscription baseline, 2022 |
+| 1.69 MB | 89 GB/yr | 1,612 GB | +222 GB | Current |
+| 2.00 MB | 105 GB/yr | 1,775 GB | +59 GB |  |
+| **2.11 MB** | **111 GB/yr** | **1,834 GB** | **0 GB** | **Ceiling breach** |
+| 2.29 MB | 120 GB/yr | 1,928 GB | −94 GB | Observed peak, March 2024 |
+| 2.75 MB | 145 GB/yr | 2,169 GB | −335 GB |  |
+| 3.57 MB | 188 GB/yr | 2,602 GB | −768 GB | Realistic worst |
+| 3.99 MB | 210 GB/yr | 2,821 GB | −987 GB | Theoretical max (bound) |
 
 ### C.3 Deliberate chain-filling paths
 
 ```text
-ROOT: Sustain avg block > 2.16 MB
+ROOT: Sustain avg block > 2.11 MB
 ├── [OR] Witness inscription flooding
-│     Fill blocks with witness-heavy data (~3.82 MB sustained)
+│     Fill blocks with witness-heavy data (3.57 MB sustained)
 │     Requires: outbidding competing monetary transactions
 ├── [OR] OP_RETURN flooding
 │     Non-witness data counts 4x by weight, so this is less storage-efficient
@@ -403,15 +417,16 @@ ROOT: Sustain avg block > 2.16 MB
       Cost is the opportunity cost of displaced fee-paying transactions
 ```
 
-Illustrative pricing at 5 sat/vB and $100,000/BTC:
+Blocks are already full by weight, so anyone sustaining a larger average block has to outbid the transactions being displaced. Buying the whole weight budget costs the same regardless of what fills it: 1,000,000 vbytes per block at 5 sat/vB is 0.05 BTC, or **2,628 BTC a year (~$263M at $100,000/BTC)**. What the paths differ in is the bytes they leave behind.
 
 | Path | Cost per year | Chain growth | Effect |
 |---|---|---|---|
-| Witness inscription, 3.82 MB avg | ~2,628 BTC (~$263M) | ~196 GB/yr | Disk full in ~5.7 years |
-| Witness inscription, 2.16 MB avg | ~1,500 BTC (~$150M) | 111 GB/yr | Ceiling reached at year 10 |
-| OP_RETURN | ~2,628 BTC (~$263M) | ~51 GB/yr | Below ceiling, about 4x less storage-efficient |
-| Out-of-band | Negotiated | Up to 196 GB/yr | Bypasses policy filters |
-| Miner self-stuffing | Opportunity cost only | Up to 196 GB/yr | No direct fee payment |
+| Witness inscription, 3.57 MB avg | ~2,628 BTC (~$263M) | 188 GB/yr | Disk full in 5.9 years |
+| OP_RETURN | ~2,628 BTC (~$263M) | 53 GB/yr | Below the ceiling. Same price, a quarter of the bytes |
+| Out-of-band | Negotiated | Up to 188 GB/yr | Bypasses policy filters |
+| Miner self-stuffing | Opportunity cost only | Up to 188 GB/yr | No direct fee payment |
+
+The OP_RETURN row is the clearest illustration of the witness discount. Non-witness bytes cost 4 weight units each, so a block filled with OP_RETURN payloads tops out near 1 MB serialized. An attacker paying the identical fee gets roughly a quarter of the chain growth.
 
 ### C.4 Storage-improvement assumptions
 
@@ -439,7 +454,7 @@ The block-weight argument is separate from the storage forecast. Under the curre
 
 That means required disk capacity grows roughly linearly with the number of replacement cycles. The percentage increase needed from one adequately sized replacement disk to the next falls as the base disk becomes larger.
 
-This arithmetic is useful, but it does not by itself establish that a fixed-budget node remains viable forever. That requires a separate assumption about how cheap storage capacity evolves. It also should be reproduced inside the paper's Python models before exact multi-cycle values are treated as model output.
+This section is arithmetic on the block-weight limit, not model output. It is useful, but it does not by itself establish that a fixed-budget node remains viable forever. That requires a separate assumption about how cheap storage capacity evolves.
 
 ### C.6 Metered-bandwidth examples
 
@@ -515,6 +530,10 @@ These figures are not part of the four-constraint model. They illustrate why ade
 <a id="ref-24"></a>[24] Mempool Research. "UTXO Set Report." April 2025, block 892,385. https://research.mempool.space/utxo-set-report/
 
 <a id="ref-25"></a>[25] CoinLedger. "Bitcoin Blockchain Size and Growth Over Time." 2025. https://coinledger.io/research/bitcoin-blockchain-size-and-growth-over-time
+
+<a id="ref-26"></a>[26] Lombrozo, E., Lau, J., Wuille, P. "BIP 141: Segregated Witness (Consensus layer)." Bitcoin Improvement Proposals. https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki - the rule is "block weight ≤ 4,000,000".
+
+<a id="ref-27"></a>[27] Bitcoin Developer Documentation. "Block Chain: proof of work and difficulty adjustment." https://developer.bitcoin.org/devguide/block_chain.html
 
 <a id="ref-31"></a>[31] Tom's Hardware. "Phison CEO confirms NAND prices have more than doubled." January 2026. https://www.tomshardware.com/pc-components/ssds/phison-ceo-confirms-nand-prices-have-more-than-doubled-and-will-continue-to-rise-all-2026-production-already-sold-out-ssds-facing-pricing-apocalypse-throughout-2027
 

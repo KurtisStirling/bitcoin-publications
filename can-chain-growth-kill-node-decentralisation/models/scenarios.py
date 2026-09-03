@@ -32,6 +32,37 @@ RAM_GB = 16
 IBD_RATE_GB_PER_HR = 12.0        # I/O bound, calibrated to observed N100 IBD
 MAX_IBD_DAYS = 7
 
+SSD_GB_NO_FS_RESERVE = 1950      # usable if the ext4 root reserve is reclaimed
+
+# Default chainstate growth used by the ceiling arithmetic. The storage model
+# runs optimistic/realistic/pessimistic variants around it; everything else
+# quotes the realistic case.
+UTXO_ENTRIES_PER_YEAR = 8_000_000
+
+
+def chainstate_growth_gb(cycle_years: int,
+                         entries_per_year: int = UTXO_ENTRIES_PER_YEAR) -> float:
+    """Chainstate added over a replacement cycle, decimal GB."""
+    return entries_per_year * cycle_years * BYTES_PER_UTXO_ENTRY / 1e9
+
+
+def disk_ceiling_gb_per_year(cycle_years: int,
+                             entries_per_year: int = UTXO_ENTRIES_PER_YEAR,
+                             usable_gb: float = None) -> float:
+    """
+    Max chain growth per year before the reference SSD fills at end of cycle.
+
+    Pure arithmetic on the reference hardware and today's chain, which is why
+    it lives here rather than in one model: the storage, IBD and bandwidth
+    models all quote this number and must quote the same one. Before this
+    existed, bandwidth/model.py carried a stale hardcoded 129 GB/yr and
+    ibd/model.py rederived it with a binary divisor.
+    """
+    usable = SSD_GB if usable_gb is None else usable_gb
+    growth = chainstate_growth_gb(cycle_years, entries_per_year)
+    available = usable - CHAIN_GB_2026 - CHAINSTATE_GB_2025 - growth
+    return max(0.0, available) / cycle_years
+
 # ── Block cadence ────────────────────────────────────────────────────
 # 52,560 is the difficulty-TARGETED cadence (144 blocks/day), not an enforced
 # rate. Actual production runs slightly above target while hashrate grows, so
@@ -102,6 +133,33 @@ def inscription_regime_mb(image_share: float = OBSERVED_IMAGE_SHARE) -> float:
 # mattering once payloads are large. So the data-heavy scenario does not depend
 # on guessing a mix, and there is no room between it and the theoretical
 # maximum for a further scenario.
+
+def op_return_block_mb() -> float:
+    """
+    Average block size for blocks filled with OP_RETURN data.
+
+    OP_RETURN payloads are non-witness, so they cost 4 weight units per byte
+    against the witness data's 1. That caps the block near 1 MB serialized,
+    which is why flooding via OP_RETURN is the least storage-efficient of the
+    chain-filling paths.
+    """
+    usable_wu = WEIGHT_LIMIT - BLOCK_OVERHEAD_WU
+    return (BLOCK_OVERHEAD_BYTES + usable_wu / 4) / 1e6
+
+
+def blockspace_cost_btc_per_year(sat_per_vb: float) -> float:
+    """
+    Fee cost of buying every block for a year at a given feerate.
+
+    Blocks are already full by weight, so an attacker sustaining a larger
+    average block has to outbid the transactions being displaced. Buying the
+    whole weight budget costs the same regardless of what fills it, which is
+    why the inscription and OP_RETURN paths carry an identical price and
+    differ only in the bytes they leave behind.
+    """
+    vbytes_per_block = WEIGHT_LIMIT / 4
+    return vbytes_per_block * sat_per_vb * BLOCKS_PER_YEAR / 1e8
+
 
 # ── Maximum block size ───────────────────────────────────────────────
 # A block approaches 4,000,000 serialized bytes as its contents approach pure

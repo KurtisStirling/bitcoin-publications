@@ -49,7 +49,7 @@ def ram_ceil_gb(t, mult):
 
 
 def chainstate_gb(t, entries_per_yr):
-    growth_gb = (entries_per_yr * t * BYTES_PER_ENTRY) / (1024 ** 3)
+    growth_gb = (entries_per_yr * t * BYTES_PER_ENTRY) / 1e9
     return CHAINSTATE_GB_2026 + growth_gb
 
 

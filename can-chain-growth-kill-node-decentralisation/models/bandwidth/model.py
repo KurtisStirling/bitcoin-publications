@@ -11,7 +11,7 @@ Three bandwidth components:
 
 Key findings:
 - Tip-following is trivial (~3 KB/s with compact blocks)
-- IBD download needs ~9.8 Mbps for the current chain (724 GB in 7 days)
+- IBD download needs ~9.6 Mbps for the current chain (724 GB in 7 days)
 - Below ~27 Mbps, download is slower than processing — bandwidth
   becomes the IBD bottleneck instead of I/O
 - For growth rate policy: at ≥27 Mbps (global median), the bandwidth
@@ -37,6 +37,14 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 import scenarios as sc
+
+# The IBD ceiling is the IBD model's result, not ours. Loaded by path because
+# both files are called model.py and neither directory is a package.
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location(
+    "ibd_model", pathlib.Path(__file__).resolve().parent.parent / "ibd" / "model.py")
+ibd_model = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(ibd_model)
 
 BLOCKS_PER_YEAR = sc.BLOCKS_PER_YEAR
 CHAIN_SIZE_GB_2026 = sc.CHAIN_GB_2026
@@ -494,7 +502,7 @@ def print_bandwidth_ceiling():
     for traj_name, traj in BANDWIDTH_TRAJECTORIES.items():
         dl = traj["download_mbps_2025"]
         bw_ceil = bandwidth_ceiling_gb_yr(dl, cycle_years=10)
-        disk_ceil = 129  # from ceiling.py
+        disk_ceil = round(sc.disk_ceiling_gb_per_year(10))
         binds = "YES" if bw_ceil < disk_ceil else "no"
         bw_str = f"{bw_ceil:.0f}" if bw_ceil > 0 else f"{bw_ceil:.0f} (already exceeded)"
 
@@ -503,19 +511,22 @@ def print_bandwidth_ceiling():
 
     print()
 
-    # What speed needed for bandwidth ceiling to match disk?
-    # 129 GB/yr * 10 + 724 = 2014 GB in 7 days → 2014 / 7 / 24 * 1024 * 8 / 3600 Mbps
-    needed_chain = CHAIN_SIZE_GB_2026 + 129 * 10
+    # What speed is needed for the bandwidth ceiling to match the disk ceiling?
+    disk_ceiling = sc.disk_ceiling_gb_per_year(10)
+    needed_chain = CHAIN_SIZE_GB_2026 + disk_ceiling * 10
     needed_gbday = needed_chain / MAX_IBD_DAYS
     needed_mbps = needed_gbday * 1000 * 8 / SECONDS_PER_DAY
     print(f"  Crossover: need {needed_mbps:.0f} Mbps for bandwidth ceiling "
-          f"to match disk ceiling (129 GB/yr).")
+          f"to match disk ceiling ({disk_ceiling:.0f} GB/yr).")
     print(f"  At that speed, chain at year 10 = {needed_chain:.0f} GB, "
           f"downloadable in 7 days.")
     print()
+
+    ibd_ceiling = ibd_model.max_growth_rate_ibd(
+        10, ibd_model.SIGOPS_PER_GB_MIXED, software_improvement=False)
     print("  For reference:")
-    print("  Disk ceiling (10yr, realistic UTXO):  129 GB/yr")
-    print("  IBD ceiling (10yr, static, mixed):    ~129 GB/yr  (converges with disk)")
+    print(f"  Disk ceiling (10yr, realistic UTXO):  {disk_ceiling:.0f} GB/yr")
+    print(f"  IBD ceiling (10yr, static, mixed):    {ibd_ceiling:.0f} GB/yr")
     print()
 
 
@@ -616,6 +627,17 @@ def print_key_finding():
     bw_med = bandwidth_ceiling_gb_yr(50.0)
     bw_27 = bandwidth_ceiling_gb_yr(27.0)
 
+    disk_ceiling = sc.disk_ceiling_gb_per_year(10)
+    ibd_ceiling = ibd_model.max_growth_rate_ibd(
+        10, ibd_model.SIGOPS_PER_GB_MIXED, software_improvement=False)
+    ibd_mbps_now = ibd_download_requirement(CHAIN_SIZE_GB_2026)["required_mbps"]
+    bw_ratio = bw_med / disk_ceiling
+    # Speed at which the bandwidth ceiling equals the disk ceiling. Distinct
+    # from the ~27 Mbps processing crossover: that one is where download stops
+    # being slower than the N100 can validate.
+    xover_mbps = ((CHAIN_SIZE_GB_2026 + disk_ceiling * 10) / MAX_IBD_DAYS
+                  * 1000 * 8 / SECONDS_PER_DAY)
+
     print("=" * 95)
     print("KEY FINDING — BANDWIDTH DOES NOT CHANGE THE GROWTH RATE CEILING")
     print("=" * 95)
@@ -624,11 +646,11 @@ def print_key_finding():
 BANDWIDTH CEILING vs OTHER CEILINGS (10yr cycle)
 =================================================
 
-  Disk ceiling:                       129 GB/yr
-  IBD ceiling (static, mixed):        ~129 GB/yr  (converges with disk)
+  Disk ceiling:                       {disk_ceiling:.0f} GB/yr
+  IBD ceiling (static, mixed):        {ibd_ceiling:.0f} GB/yr
   Bandwidth ceiling (5 Mbps):         {bw_dev:.0f} GB/yr  (already exceeded)
-  Bandwidth ceiling (27 Mbps):        {bw_27:.0f} GB/yr  (≈ disk ceiling)
-  Bandwidth ceiling (50 Mbps):        {bw_med:.0f} GB/yr  (2.3x disk)
+  Bandwidth ceiling (27 Mbps):        {bw_27:.0f} GB/yr  (above disk ceiling)
+  Bandwidth ceiling (50 Mbps):        {bw_med:.0f} GB/yr  ({bw_ratio:.1f}x disk)
 
 THREE COMPONENTS, THREE VERDICTS
 =================================
@@ -636,16 +658,16 @@ THREE COMPONENTS, THREE VERDICTS
   1. TIP-FOLLOWING: ~3 KB/s with compact blocks (BIP152).
      Trivial. Not a factor at any connection speed.
 
-  2. IBD DOWNLOAD: ~9.8 Mbps needed for current chain (724 GB / 7 days).
+  2. IBD DOWNLOAD: {ibd_mbps_now:.1f} Mbps needed for current chain (724 GB / 7 days).
      - Below ~10 Mbps: IBD is download-bound (>7 days). Affects ~3-5%
        of global fixed broadband connections (conflict states, rural
        ADSL). Core achieves ~80-90% of line speed in this regime.
-     - Below ~27 Mbps: bandwidth ceiling tighter than disk ceiling.
-       ~10-20% of global connections (DSL tail in developed countries,
-       rural areas, poorer developing nations like Indonesia at 32 Mbps).
-     - Above ~27 Mbps: bandwidth ceiling exceeds disk ceiling.
-       Disk binds first. Download faster than processing.
-       Bandwidth irrelevant for policy.
+     - Below ~{xover_mbps:.0f} Mbps: bandwidth ceiling tighter than the disk
+       ceiling. ~10-20% of global connections (DSL tail in developed
+       countries, rural areas, poorer developing nations).
+     - Above ~{xover_mbps:.0f} Mbps: bandwidth ceiling exceeds the disk
+       ceiling. Disk binds first, and above ~27 Mbps download is also
+       faster than the N100 can process. Bandwidth irrelevant for policy.
 
   3. PEER SERVING (upload): ~2 Mbps for 2 syncing peers.
      Tight for developing nations (2 Mbps up). Not a node viability

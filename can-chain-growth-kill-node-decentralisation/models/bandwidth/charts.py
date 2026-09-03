@@ -50,7 +50,7 @@ INET_RICH_CAGR = 0.04
 def chain_ibd_mbps(growth_gb_yr, year):
     chain_gb = CHAIN_SIZE_GB_2026 + growth_gb_yr * year
     gb_per_day = chain_gb / MAX_IBD_DAYS
-    return gb_per_day * 1024 * 8 / SECONDS_PER_DAY
+    return gb_per_day * 1000 * 8 / SECONDS_PER_DAY
 
 
 def inet_mbps(base, cagr, year):

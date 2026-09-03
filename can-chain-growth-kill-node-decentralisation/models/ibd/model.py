@@ -169,7 +169,7 @@ def utxo_chainstate_gb(year: int, entries_per_year: int = 8_000_000) -> float:
     """Chainstate size (GB) at year N from 2025 baseline."""
     new_entries = entries_per_year * year
     total_entries = UTXO_SET_ENTRIES_2025 + new_entries
-    return (total_entries * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
+    return (total_entries * BYTES_PER_UTXO_ENTRY) / 1e9
 
 
 def av_phase_degradation(chainstate_gb: float) -> float:
@@ -452,10 +452,8 @@ def print_ibd_ceiling_table():
     print("=" * 100)
     print()
 
-    # Disk ceiling for comparison (from ceiling.py formula)
-    utxo_growth_10yr_gb = (8_000_000 * 10 * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
-    disk_ceiling_10yr = (SSD_GB - CHAIN_SIZE_GB_2026 - CHAINSTATE_GB_2025
-                         - utxo_growth_10yr_gb) / 10
+    # Disk ceiling for comparison. Shared arithmetic, not a second copy.
+    disk_ceiling_10yr = sc.disk_ceiling_gb_per_year(10)
 
     print(f"  Disk ceiling (10yr, realistic UTXO): {disk_ceiling_10yr:.0f} GB/yr")
     print()
@@ -549,9 +547,7 @@ def print_key_finding():
     print("=" * 100)
 
     # Compute both ceilings
-    utxo_growth_10yr_gb = (8_000_000 * 10 * BYTES_PER_UTXO_ENTRY) / (1024 ** 3)
-    disk_ceiling = (SSD_GB - CHAIN_SIZE_GB_2026 - CHAINSTATE_GB_2025
-                    - utxo_growth_10yr_gb) / 10
+    disk_ceiling = sc.disk_ceiling_gb_per_year(10)
 
     ibd_ceiling_static_mixed = max_growth_rate_ibd(
         10, SIGOPS_PER_GB_MIXED, software_improvement=False)
