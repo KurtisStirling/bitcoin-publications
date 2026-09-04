@@ -198,7 +198,7 @@ Storage is not the only resource that grows with the chain. Do any of the others
 
 ![Required IBD bandwidth against residential internet supply](figures/fig-bandwidth.png)
 
-*Model: [`models/bandwidth/`](models/bandwidth).*
+*Log vertical axis, so each gridline is ten times the one below. Model: [`models/bandwidth/`](models/bandwidth).*
 
 Following the tip needs little bandwidth compared with IBD. Downloading the current 724 GB chain inside seven days requires about **9.6 Mbps**, and even the data-heavy year-10 chain of 2,602 GB requires only **34 Mbps**.
 
@@ -210,7 +210,7 @@ Bandwidth **cost** is a separate access problem and is treated in Section 6.
 
 ![Chain size against the seven-day processing limit](figures/fig-ibd.png)
 
-*Model: [`models/ibd/`](models/ibd).*
+*Log vertical axis. The optimistic hardware ceiling runs off the top. Model: [`models/ibd/`](models/ibd).*
 
 On the N100 reference machine, IBD processing tracks chain size more closely than transaction composition. At today's average block a year-10 sync takes about **6.1 days** against the seven-day target, and at the observed 80 GB/year trajectory about **5.7 days**. The data-heavy scenario reaches **9.8 days**.
 
@@ -222,7 +222,7 @@ IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable b
 
 ![UTXO chainstate growth scenarios against available RAM](figures/fig-utxo.png)
 
-*Model: [`models/utxo/`](models/utxo).*
+*Log vertical axis. RAM growth leaves the plot long before 2110, which is the point: the chainstate is not the binding constraint. Model: [`models/utxo/`](models/utxo).*
 
 The current chainstate is about 11 GB, close to the amount a 16 GB machine can cache after the operating system takes its share. Once it grows beyond available RAM, more UTXO lookups hit disk. Benchmarks show that this can slow IBD materially, but it is a performance gradient rather than a functional cutoff [\[42\]](#ref-42).
 

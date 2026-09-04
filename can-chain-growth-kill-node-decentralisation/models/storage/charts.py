@@ -23,7 +23,7 @@ from chart_style import (
     CHAIN_RAMP, CHAIN_LW,
     LABEL_FONTSIZE, LABEL_CEIL_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
-    save, smart_labels, group_legend,
+    save, smart_labels, group_legend, log_yaxis,
 )
 
 # ── Constants ─────────────────────────────────────────────────────────
@@ -89,16 +89,7 @@ def make_chart(suffix="", footnote=None, label_min_gap=None, log=False,
     if log:
         floor = min(ceil["pessimistic"].min(),
                     min(s.min() for s, _, _ in demand))
-        ax.set_yscale("log")
-        ax.set_ylim(floor * 0.7,
-                    log_top or ceil["optimistic"].max() * 1.4)
-        ax.yaxis.set_major_locator(ticker.LogLocator(base=10))
-        ax.yaxis.set_minor_locator(
-            ticker.LogLocator(base=10, subs=tuple(np.arange(2, 10) * 0.1),
-                              numticks=100))
-        ax.yaxis.set_major_formatter(
-            ticker.FuncFormatter(lambda v, _: f"{v:g}"))
-        ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+        log_yaxis(ax, floor, log_top or ceil["optimistic"].max() * 1.4)
         label_ceiling = ax.get_ylim()[1]
     else:
         ax.set_ylim(0, Y_MAX_TB)
@@ -144,4 +135,4 @@ if __name__ == "__main__":
     # No on-figure footnote. The style spec puts detail in the caption, and
     # the decay rule, the upgrade cycle and the log axis are all stated in
     # section 4, appendix C.4 and the figure caption respectively.
-    make_chart(label_min_gap=0.24, log=True)
+    make_chart(log=True)

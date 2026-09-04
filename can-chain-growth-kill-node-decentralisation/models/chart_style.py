@@ -10,6 +10,7 @@ Output: PNG at 400 DPI.
 
 import pathlib
 import matplotlib as mpl
+import matplotlib.ticker as ticker
 
 # ── Apply academic rcParams on import ──────────────────────────────────
 
@@ -116,6 +117,30 @@ def save(fig, name):
     print(f"Saved: {png}")
 
 
+def log_yaxis(ax, floor, top):
+    """Put the y-axis on a log scale, decade ticks, plain numeric labels.
+
+    floor is the smallest value that must stay on the plot; the axis starts a
+    little below it. top caps the axis so a ceiling cloud spanning several
+    more orders of magnitude runs off the top instead of crushing everything
+    a reader actually looks at.
+
+    Shared by every 80-year chart. The spec's rule is that a log axis is used
+    wherever the series span more than about an order of magnitude, and all
+    four of them do.
+    """
+    import numpy as _np
+
+    ax.set_yscale("log")
+    ax.set_ylim(floor * 0.7, top)
+    ax.yaxis.set_major_locator(ticker.LogLocator(base=10))
+    ax.yaxis.set_minor_locator(
+        ticker.LogLocator(base=10, subs=tuple(_np.arange(2, 10) * 0.1),
+                          numticks=100))
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+    ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+
+
 def group_legend(ax, ceil_label, chain_label, loc="upper left",
                  chain_color=None):
     """Add a minimal 2-entry legend identifying the ceiling and chain groups."""
@@ -159,8 +184,17 @@ def labels_right(ax, x, items, min_gap=None, log=False):
     inv = (lambda v: 10 ** v) if log else (lambda v: v)
 
     if min_gap is None:
+        # Derive the gap from the label's own height rather than from a
+        # fraction of the axis range. A fixed fraction is wrong at both ends:
+        # it overlaps two-line labels on a short axis and spreads them
+        # absurdly on a tall one. This works in whatever space the axis is
+        # drawn in, so it is correct on log axes too.
         y0, y1 = ax.get_ylim()
-        min_gap = (fwd(y1) - fwd(y0)) * 0.04
+        n_lines = max(t[1].count("\n") + 1 for t in items)
+        label_height_in = LABEL_FONTSIZE * 1.35 * n_lines / 72
+        bbox = ax.get_window_extent()
+        axes_height_in = bbox.height / ax.get_figure().dpi
+        min_gap = (fwd(y1) - fwd(y0)) * label_height_in / axes_height_in
 
     # Sort by y position
     sorted_items = sorted(items, key=lambda t: t[0])

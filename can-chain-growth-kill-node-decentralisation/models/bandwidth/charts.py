@@ -19,7 +19,7 @@ from chart_style import (
     CHAIN_RAMP, CHAIN_LW,
     LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
-    save, smart_labels, group_legend, label_along_curve,
+    save, smart_labels, group_legend, log_yaxis,
 )
 
 from model import (
@@ -30,7 +30,12 @@ from model import (
 # ── Constants ─────────────────────────────────────────────────────────
 
 SECONDS_PER_DAY = 86_400
-Y_MAX = 250
+
+# Top of the log axis. The optimistic tier reaches ~1,340 Mbps by 2110. The
+# old 250 Mbps linear cap cut the optimistic line off in 2060 and the base
+# line in 2090, so two of the three supply tiers the caption promised were
+# missing from most of the chart.
+Y_TOP_LOG = 1000
 
 RATE_WORST = sc.RATE_REALISTIC_WORST
 RATE_PEAK = sc.RATE_PEAK
@@ -95,26 +100,20 @@ def make_chart():
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Download speed (Mbps)", fontsize=8)
     ax.set_xlim(START_YEAR, START_YEAR + TOTAL_YEARS)
-    ax.set_ylim(0, Y_MAX)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(50))
+    log_yaxis(ax, min(inet_pess.min(), req_cur.min()), Y_TOP_LOG)
     ax.yaxis.grid(True, alpha=GRID_ALPHA, linewidth=0.4)
 
-    # Ceiling labels — curved along their lines, right-aligned to exit point
-    label_along_curve(ax, dates, inet_opt, "Optimistic (developed)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX)
-    label_along_curve(ax, dates, inet_base, "Base (global)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX)
-    label_along_curve(ax, dates, inet_pess, "Pessimistic (developing)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX)
-
-    # Chain labels — right edge
     x_end = START_YEAR + TOTAL_YEARS
+    y_top = ax.get_ylim()[1]
     smart_labels(ax, dates, [
         (req_cur, sc.chart_label("current"), CHAIN_RAMP[1]),
         (req_peak, sc.chart_label("peak"), CHAIN_RAMP[2]),
         (req_worst, sc.chart_label("realistic_worst"), CHAIN_RAMP[3]),
-    ], Y_MAX, x_end)
+        (inet_opt, "Optimistic\n(developed)", LABEL_CEIL_COLOR),
+        (inet_base, "Base\n(global)", LABEL_CEIL_COLOR),
+        (inet_pess, "Pessimistic\n(developing)", LABEL_CEIL_COLOR),
+    ], y_top, x_end, log=True)
 
     group_legend(ax, "Internet speed", "7-day IBD requires", chain_color=CHAIN_RAMP[1])
 

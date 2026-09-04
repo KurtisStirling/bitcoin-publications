@@ -12,33 +12,38 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import scenarios as sc
 from chart_style import (
     CEIL_LINE_BASE, CEIL_FILL_COLOR, CEIL_FILL_ALPHA,
     CEIL_LW_BASE,
-    CHAIN_COLOR, CHAIN_COLOR_MAX, CHAIN_LW_CONS, CHAIN_LW_BASE, CHAIN_LW_MAX,
-    LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
+    CHAIN_RAMP, CHAIN_LW,
+    LABEL_CEIL_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
-    save, smart_labels, group_legend, label_along_curve,
+    save, smart_labels, group_legend, log_yaxis,
 )
 
 # ── Constants ─────────────────────────────────────────────────────────
 
-CHAINSTATE_GB_2026 = 11.0
-BYTES_PER_ENTRY = 63
+CHAINSTATE_GB_2026 = sc.CHAINSTATE_GB_2025
+BYTES_PER_ENTRY = sc.BYTES_PER_UTXO_ENTRY
 
-RAM_TOTAL_GB = 16
+RAM_TOTAL_GB = sc.RAM_GB
 RAM_OVERHEAD_GB = 4
-UPGRADE_INTERVAL = 10
+UPGRADE_INTERVAL = sc.HW_UPGRADE_INTERVAL
 
 RAM_MULT_OPT = 3.0
 RAM_MULT_BASE = 2.0
 RAM_MULT_PESS = 1.5
 
 UTXO_WORST_PER_YR = 20_000_000
-UTXO_REAL_PER_YR = 8_000_000
+UTXO_REAL_PER_YR = sc.UTXO_ENTRIES_PER_YEAR
 UTXO_CURRENT_PER_YR = 5_000_000
 
-Y_MAX_GB = 120
+# Top of the log axis. The base RAM ceiling reaches ~5,400 GB by 2110 and the
+# optimistic one far more, so the cloud runs off the top as it does on the
+# storage chart. The old 120 GB linear cap cut every ceiling line off before
+# 2050 and left only the chainstate lines visible.
+Y_TOP_LOG_GB = 1000
 
 
 # ── Helpers ───────────────────────────────────────────────────────────
@@ -78,39 +83,40 @@ def make_chart():
     ax.plot(dates, ram_base, color=CEIL_LINE_BASE, linewidth=CEIL_LW_BASE,
             linestyle="-", zorder=5)
 
-    # Chain growth lines (no fill)
-    ax.plot(dates, cs_curr, color=CHAIN_COLOR, linewidth=CHAIN_LW_CONS,
-            linestyle=":", zorder=5)
-    ax.plot(dates, cs_real, color=CHAIN_COLOR, linewidth=CHAIN_LW_BASE,
-            linestyle="--", zorder=5)
-    ax.plot(dates, cs_worst, color=CHAIN_COLOR_MAX, linewidth=CHAIN_LW_MAX,
-            linestyle=":", zorder=5)
+    # Growth scenarios: ordered by rate, so colour carries the severity and
+    # every line is the same weight and solid. They were previously separated
+    # by dash pattern and thickness, which the style spec bans.
+    ax.plot(dates, cs_curr, color=CHAIN_RAMP[1], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
+    ax.plot(dates, cs_real, color=CHAIN_RAMP[2], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
+    ax.plot(dates, cs_worst, color=CHAIN_RAMP[3], linewidth=CHAIN_LW,
+            linestyle="-", zorder=5)
 
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Size (GB)", fontsize=8)
     ax.set_xlim(START_YEAR, START_YEAR + TOTAL_YEARS)
-    ax.set_ylim(0, Y_MAX_GB)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
+    log_yaxis(ax, min(cs_curr.min(), ram_pess.min()), Y_TOP_LOG_GB)
     ax.yaxis.grid(True, alpha=GRID_ALPHA, linewidth=0.4)
 
-    # Ceiling labels — curved along their lines
-    label_along_curve(ax, dates, ram_opt, "Optimistic (3x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_GB)
-    label_along_curve(ax, dates, ram_base, "Base (2x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_GB)
-    label_along_curve(ax, dates, ram_pess, "Pessimistic (1.5x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_GB)
-
-    # Chain labels — right edge
+    # Labels are colour-matched to their own line, not to a shared orange.
     x_end = START_YEAR + TOTAL_YEARS
+    y_top = ax.get_ylim()[1]
     smart_labels(ax, dates, [
-        (cs_curr, "Current\n(5M/yr)", LABEL_CHAIN_COLOR),
-        (cs_real, "Organic rate\n(8M/yr)", LABEL_CHAIN_COLOR),
-        (cs_worst, "2024 peak\n(20M/yr)", LABEL_CHAIN_COLOR),
-    ], Y_MAX_GB, x_end)
+        (cs_curr, f"Current\n({UTXO_CURRENT_PER_YR // 1_000_000}M/yr)",
+         CHAIN_RAMP[1]),
+        (cs_real, f"Organic rate\n({UTXO_REAL_PER_YR // 1_000_000}M/yr)",
+         CHAIN_RAMP[2]),
+        (cs_worst, f"2024 peak\n({UTXO_WORST_PER_YR // 1_000_000}M/yr)",
+         CHAIN_RAMP[3]),
+        (ram_opt, f"Optimistic\n({RAM_MULT_OPT:g}x/decade)", LABEL_CEIL_COLOR),
+        (ram_base, f"Base\n({RAM_MULT_BASE:g}x/decade)", LABEL_CEIL_COLOR),
+        (ram_pess, f"Pessimistic\n({RAM_MULT_PESS:g}x/decade)", LABEL_CEIL_COLOR),
+    ], y_top, x_end, log=True)
 
-    group_legend(ax, "Available RAM", "UTXO set size")
+    group_legend(ax, "Available RAM", "UTXO set size",
+                 chain_color=CHAIN_RAMP[1])
 
     fig.subplots_adjust(right=0.78)
     save(fig, "fig-utxo")

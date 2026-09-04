@@ -19,7 +19,7 @@ from chart_style import (
     CHAIN_RAMP, CHAIN_LW,
     LABEL_CEIL_COLOR, LABEL_CHAIN_COLOR,
     FIGSIZE, TOTAL_YEARS, START_YEAR, GRID_ALPHA,
-    save, smart_labels, group_legend, label_along_curve,
+    save, smart_labels, group_legend, log_yaxis,
 )
 
 from model import (
@@ -34,8 +34,18 @@ from model import (
 
 # ── Constants ─────────────────────────────────────────────────────────
 
-Y_MAX_TB = 18
+# Top of the log axis. The optimistic ceiling reaches ~580 TB by 2110, which
+# would push every chain line into the bottom of the plot. 100 TB keeps the
+# cloud running off the top, as on the storage chart.
+Y_TOP_LOG_TB = 100
 FV_GROWTH_REF = 80
+
+# Upper bracket for the bisection below, in GB. It was 50,000 (50 TB), which
+# is smaller than the optimistic ceiling from about 2100 on, so both the
+# optimistic and base ceiling lines flattened onto the bracket itself rather
+# than onto anything the model says. On the old 18 TB linear axis both lines
+# had left the plot long before, so the artefact never showed.
+CEIL_SEARCH_MAX_GB = 5_000_000
 
 HW_OPT = 2.0
 HW_BASE = HW_IMPROVEMENT_PER_DECADE  # 1.5
@@ -62,8 +72,8 @@ def make_chart():
             chainstate = utxo_chainstate_gb(yr_int)
             target_hours = MAX_IBD_DAYS * 24 * hw_mult
 
-            lo, hi = 0.0, 50_000.0
-            for _ in range(100):
+            lo, hi = 0.0, CEIL_SEARCH_MAX_GB
+            for _ in range(200):
                 mid = (lo + hi) / 2
                 result = ibd_time_hours(
                     mid, FV_GROWTH_REF, CEIL_SIGOPS, chainstate,
@@ -109,26 +119,22 @@ def make_chart():
     ax.set_xlabel("Year", fontsize=8)
     ax.set_ylabel("Chain size (TB)", fontsize=8)
     ax.set_xlim(START_YEAR, START_YEAR + TOTAL_YEARS)
-    ax.set_ylim(0, Y_MAX_TB)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(2))
+    log_yaxis(ax, min(ch_cur.min(), ceil_pess.min()), Y_TOP_LOG_TB)
     ax.yaxis.grid(True, alpha=GRID_ALPHA, linewidth=0.4)
 
-    # Ceiling labels — curved along their lines
-    label_along_curve(ax, dates, ceil_opt, "Optimistic (2x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_TB)
-    label_along_curve(ax, dates, ceil_base, "Base (1.5x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_TB)
-    label_along_curve(ax, dates, ceil_pess, "Pessimistic (1.2x/decade)",
-                      LABEL_CEIL_COLOR, y_max=Y_MAX_TB)
-
-    # Chain labels — right edge
+    # Every label goes to the right edge and is spaced there in one pass,
+    # in log space so the gaps stay even on screen.
     x_end = START_YEAR + TOTAL_YEARS
+    y_top = ax.get_ylim()[1]
     smart_labels(ax, dates, [
         (ch_cur, sc.chart_label("current"), CHAIN_RAMP[1]),
         (ch_peak, sc.chart_label("peak"), CHAIN_RAMP[2]),
         (ch_worst, sc.chart_label("realistic_worst"), CHAIN_RAMP[3]),
-    ], Y_MAX_TB, x_end)
+        (ceil_opt, "Optimistic\n(2x/decade)", LABEL_CEIL_COLOR),
+        (ceil_base, "Base\n(1.5x/decade)", LABEL_CEIL_COLOR),
+        (ceil_pess, "Pessimistic\n(1.2x/decade)", LABEL_CEIL_COLOR),
+    ], y_top, x_end, log=True)
 
     group_legend(ax, "7-day processing limit", "Chain size", chain_color=CHAIN_RAMP[1])
 
