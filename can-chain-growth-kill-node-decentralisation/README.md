@@ -156,7 +156,7 @@ That distinction does not change the structural result. With the weight limit un
 
 For a fixed service life, linear growth means each replacement machine has to absorb another roughly fixed quantity of chain history. A ten-year cycle at the 210 GB/year envelope adds about 2.1 TB. A seven-year cycle adds less. Changing the service life changes the size and timing of each step, not the fact that required disk capacity grows roughly linearly.
 
-This is the useful part of the new long-run argument: the storage requirement is not itself compounding.
+This is the useful part of the new long-run argument: the storage requirement is not itself compounding. It does not make the first cycle easier. At the envelope rate the disk an operator needs to buy today is already larger than this paper's reference machine, and the jumps only get proportionally smaller after that. Appendix C.5 gives the sequence.
 
 ### Storage improvement still decides who wins
 
@@ -456,9 +456,11 @@ The original forecast communication scenarios are retained below. The probabilit
 
 The block-weight argument is separate from the storage forecast. Under the current rules, each block has a bounded weight and difficulty targets a roughly stable block cadence. At a fixed average chain-growth rate *g* and a fixed replacement interval *T*, each hardware cycle adds approximately *gT* of history.
 
-That means required disk capacity grows roughly linearly with the number of replacement cycles. The percentage increase needed from one adequately sized replacement disk to the next falls as the base disk becomes larger.
+That means required disk capacity grows roughly linearly with the number of replacement cycles, and the percentage jump from one disk to the next shrinks as the base disk gets bigger. At the 210 GB/year envelope on a ten-year cycle, a disk needs 2.84 TB usable to survive the first cycle, then 4.94 TB, then 7.04 TB, then 9.14 TB. Those are increases of 74%, then 43%, then 30%.
 
-This section is arithmetic on the block-weight limit, not model output. It is useful, but it does not by itself establish that a fixed-budget node remains viable forever. That requires a separate assumption about how cheap storage capacity evolves.
+The first rung is the hardest one, which is easy to lose sight of when reading the sequence. The reference machine here has 1.85 TB usable and is short of the 2.84 TB requirement from the day it is bought. At the envelope rate it fills in about five years, so its replacement arrives halfway through the cycle rather than at the end of it. Missing the first requirement is not something the next replacement cycle quietly absorbs.
+
+The sequence is model output. What it rests on is not: the block-weight limit is a consensus rule and the rest is arithmetic. Either way it does not establish that a fixed-budget node remains viable forever. That requires a separate assumption about how cheap storage capacity evolves, which is what C.4 supplies.
 
 ### C.6 Metered-bandwidth examples
 

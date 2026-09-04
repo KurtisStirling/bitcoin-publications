@@ -275,6 +275,38 @@ def hw_capacity_tb(case: str, year: float, usable_tb: float = None,
     return cap
 
 
+def required_usable_tb(gb_per_year: float, purchase_index: int,
+                       cycle_years: int = HW_UPGRADE_INTERVAL) -> float:
+    """
+    Usable capacity the disk bought at a given replacement must have to last
+    the whole cycle, in TB. purchase_index 0 is the 2026 machine.
+
+    This is the cross-generational form of the disk ceiling: chain and
+    chainstate as they stand today, plus everything both add between now and
+    the end of that cycle. It exists because the multi-cycle argument was
+    once hand-derived, and it started from a machine large enough to survive
+    the first cycle rather than from the paper's own 2 TB reference, which is
+    not. The first rung is the one the reference machine misses.
+    """
+    years = (purchase_index + 1) * cycle_years
+    total_gb = (CHAIN_GB_2026 + CHAINSTATE_GB_2025
+                + gb_per_year * years + chainstate_growth_gb(years))
+    return total_gb / 1000
+
+
+def required_disk_sequence(gb_per_year: float, purchases: int = 4,
+                           cycle_years: int = HW_UPGRADE_INTERVAL):
+    """(year, required usable TB, % increase on the previous rung) per purchase."""
+    out = []
+    prev = None
+    for k in range(purchases):
+        tb = required_usable_tb(gb_per_year, k, cycle_years)
+        out.append((2026 + k * cycle_years, tb,
+                    None if prev is None else (tb / prev - 1) * 100))
+        prev = tb
+    return out
+
+
 def hw_label(case: str) -> str:
     """Chart label for a storage scenario, derived from its own rates."""
     s = HW_IMPROVEMENT[case]
@@ -300,6 +332,13 @@ if __name__ == "__main__":
     for k, s in SCENARIOS.items():
         print(f"{s['label']:<18} {s['kind']:<12} "
               f"{s['avg_block_mb']:>7.2f} MB {s['gb_per_year']:>8.1f}")
+
+    print(f"\nRequired usable disk per 10-year purchase, "
+          f"{RATE_THEORETICAL_MAX:.0f} GB/yr envelope "
+          f"(reference machine has {SSD_GB/1000:.2f} TB usable):")
+    for yr, tb, step in required_disk_sequence(RATE_THEORETICAL_MAX):
+        pct = "" if step is None else f"  (+{step:.0f}%)"
+        print(f"  {yr}  {tb:5.2f} TB{pct}")
 
     print(f"\nInscription regime saturates with image share:")
     for f in (0.0, 0.05, 0.10, 0.25, 0.50, 1.0):
