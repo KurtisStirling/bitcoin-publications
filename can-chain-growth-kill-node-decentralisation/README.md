@@ -10,7 +10,7 @@ All models are standalone Python and live in [`models/`](models). Every modelled
 
 ## Summary
 
-Bitcoin depends on people independently verifying the chain. If doing that requires increasingly expensive hardware or frequent upgrades, fewer people may keep running nodes, making the validator population easier to concentrate or coerce.
+Bitcoin depends on people independently verifying the chain [\[1\]](#ref-1). If doing that requires increasingly expensive hardware or frequent upgrades, fewer people may keep running nodes, making the validator population easier to concentrate or coerce.
 
 I modelled four hardware constraints against a deliberately cheap target: a **$300 archival node with a ten-year service life**. Storage binds first. Once the filesystem, the operating system and the UTXO set have taken their share, the reference machine's 2 TB SSD has room for about **111 GB of chain growth per year** across ten years. Growth since 2023 has run at roughly **80 GB/year** and today's 1.69 MB average block implies about **89 GB/year**, so both fit. The ceiling is crossed at 2.11 MB, 25% above today's average, and March 2024 already averaged 2.29 MB for a month, equivalent to **120 GB/year**. Blocks saturated with inscriptions, at the image mix observed at the 2023 inscription peak, average 3.57 MB. That is **188 GB/year**, and it fills the reference disk in **5.9 years**.
 
@@ -18,7 +18,7 @@ That makes the next hardware cycle less comfortable than the historical trend su
 
 Under the current consensus rules block weight is capped at 4 million weight units [\[26\]](#ref-26), and difficulty retargeting aims at a ten-minute block interval rather than enforcing one [\[27\]](#ref-27). At that cadence, a chain of blocks near the maximum witness-heavy size grows by roughly **210 GB/year**. Since the number of blocks in a calendar year varies, that is an upper envelope rather than a protocol ceiling on annual growth. The shape is what matters: unless the block-weight regime changes, sustained chain growth is linear rather than exponential.
 
-A fixed growth rate changes the long-run question. Each hardware generation has to absorb another fixed quantity of chain history. The disk required therefore grows roughly linearly, while storage capacity per dollar can improve multiplicatively. If storage keeps improving at a persistent positive rate, capacity eventually pulls away from chain growth. If improvement stalls, reverses, or decays toward zero quickly enough, it may not. The paper's long-range storage scenarios still matter for that reason.
+A fixed growth rate changes the long-run question. Each hardware generation has to absorb another fixed quantity of chain history. The disk required therefore grows roughly linearly, while storage capacity per dollar can improve multiplicatively. If storage keeps improving at a persistent positive rate, capacity eventually pulls away from chain growth. If improvement stalls near zero, it may not, and even a rate that does pull away can spend decades behind the chain first. The paper's long-range storage scenarios still matter for both reasons.
 
 So the result is conditional rather than absolute. **Chain growth under today's rules does not create an inherently accelerating hardware spiral, and the base storage scenario gains headroom over time. But the first hardware cycles can still force upgrades or pruning, and this paper does not model enough of the cost-to-node-count relationship to prove that chain growth could never contribute to severe centralisation.**
 
@@ -72,7 +72,7 @@ Satoshi identified the underlying tension early:
 
 A node being affordable on the day it is bought is not enough if chain growth forces a replacement a few years later. I therefore use **service life** as the main test.
 
-The Raspberry Pi 4 is a useful empirical example. It was widely recommended for budget nodes around 2022, but by 2025 Bitcoin workloads were moving toward N100/N150-class hardware as IBD times stretched and memory became restrictive [\[49\]](#ref-49)[\[50\]](#ref-50)[\[51\]](#ref-51)[\[52\]](#ref-52).
+The Raspberry Pi 4 is a useful empirical example. It was widely recommended for budget nodes around 2022, but by 2025 Bitcoin workloads were moving toward N100/N150-class hardware as IBD times stretched and memory became restrictive [\[45\]](#ref-45)[\[46\]](#ref-46)[\[47\]](#ref-47)[\[48\]](#ref-48).
 
 I use a **ten-year target**. That is deliberately demanding for consumer hardware, but reasonable as a stress test for a single-purpose appliance. Section 7 shows the effect of shorter replacement cycles.
 
@@ -126,9 +126,9 @@ The observed trajectory since 2023 is roughly **80 GB/year**, and today's 1.69 M
 
 The ceiling is crossed at **2.11 MB average blocks**, 25% above today's average. March 2024 averaged 2.29 MB, equivalent to **120 GB/year**, so the break point has already been passed for a month at a time. It did not persist.
 
-Blocks have been effectively full by weight since January 2023, so transaction mix now matters more than transaction count for storage. Average block size rose from 1.11 MB in 2022 to 1.69 MB as witness-heavy inscriptions became a larger share of block space [\[38\]](#ref-38)[\[39\]](#ref-39)[\[40\]](#ref-40). OP_RETURN use and direct submission to miners provide other routes for data-heavy transactions [\[41\]](#ref-41).
+Blocks have been effectively full by weight since January 2023, so transaction mix now matters more than transaction count for storage. Average block size rose from 1.11 MB in 2022 to 1.69 MB as witness-heavy inscriptions became a larger share of block space [\[34\]](#ref-34)[\[35\]](#ref-35)[\[36\]](#ref-36). OP_RETURN use and direct submission to miners provide other routes for data-heavy transactions [\[37\]](#ref-37).
 
-Fill those blocks with inscriptions at the image mix observed during the 2023 peak, roughly 10% images by count [\[40\]](#ref-40), and the average block comes out at **3.57 MB**. That is **188 GB/year**, and it exhausts the reference disk in **5.9 years**.
+Fill those blocks with inscriptions at the image mix observed during the 2023 peak, roughly 10% images by count [\[36\]](#ref-36), and the average block comes out at **3.57 MB**. That is **188 GB/year**, and it exhausts the reference disk in **5.9 years**.
 
 The mix barely matters. Raising the image share from 10% to 100% moves the average block only from 3.57 MB to 3.95 MB, because per-transaction overhead stops counting for anything once payloads are large. So the scenario does not rest on guessing how data-heavy a future regime would be. It rests on blocks staying saturated, which no month on record has managed above 2.29 MB.
 
@@ -138,7 +138,7 @@ The transaction-mix derivation, block-size sensitivity table and deliberate chai
 
 A pruned node is not constrained by a 2 TB archival disk in the same way. It still validates the historical chain during IBD, but discards old blocks afterwards.
 
-That makes pruning an effective response for the operator, not a complete answer for the network. New nodes still need archival peers from which to obtain history, and the protocol does not guarantee a minimum archival population. SeF proposes a coded archival architecture that could reduce per-node historical storage [\[62\]](#ref-62), but it is not deployed.
+That makes pruning an effective response for the operator, not a complete answer for the network. New nodes still need archival peers from which to obtain history, and the protocol does not guarantee a minimum archival population. SeF proposes a coded archival architecture that could reduce per-node historical storage [\[59\]](#ref-59), but it is not deployed.
 
 ---
 
@@ -162,9 +162,9 @@ This is the useful part of the new long-run argument: the storage requirement is
 
 ![Storage cost per gigabyte, 1956–2026, with a distributional forecast to 2066](figures/fig-storage-outlook.png)
 
-*Historical storage cost with forecast confidence intervals. Model: [`models/storage/`](models/storage).*
+*Historical storage cost with forecast confidence intervals. Model: [`models/storage/storage-outlook-fan.py`](models/storage/storage-outlook-fan.py).*
 
-Cheap storage does not currently look like a smooth exponential trend. Consumer SSD prices bottomed around $0.05/GB in mid-2023 and had risen to about $0.11/GB by January 2026. NAND input prices also rose sharply through 2025 as AI-related demand competed for manufacturing capacity [\[3\]](#ref-3)[\[4\]](#ref-4)[\[31\]](#ref-31)[\[32\]](#ref-32)[\[33\]](#ref-33).
+Cheap storage does not currently look like a smooth exponential trend. Consumer SSD prices bottomed around $0.05/GB in mid-2023 and had risen to about $0.11/GB by January 2026. NAND input prices also rose sharply through 2025 as AI-related demand competed for manufacturing capacity [\[3\]](#ref-3)[\[4\]](#ref-4)[\[28\]](#ref-28)[\[29\]](#ref-29)[\[30\]](#ref-30).
 
 The model therefore uses three starting improvement rates, **5%, 10% and 15% per year**, each decaying toward a long-run floor of 2%, 7% and 10%. The 10% base case is anchored to the observed 2014–2026 CAGR of about 10.2%; the 5% case is close to the much weaker 2019–2026 period. Appendix C.4 gives the floors and where they come from.
 
@@ -174,7 +174,7 @@ The model therefore uses three starting improvement rates, **5%, 10% and 15% per
 
 The chart shows why the long run is more reassuring in the base case. When cheap storage improves fast enough, capacity pulls away from linear chain growth and later hardware generations gain headroom.
 
-But the bounded-growth argument does **not** make the storage forecast irrelevant. A persistent positive compound improvement rate eventually beats linear growth. A rate that stalls, reverses, or decays toward zero quickly enough need not. The model deliberately includes decaying improvement rates, so the long-run result remains conditional on storage economics.
+But the bounded-growth argument does **not** make the storage forecast irrelevant. Every scenario here decays toward a positive floor, and a positive floor always beats linear growth given enough time, so all three end up ahead of the chain in the end. Enough time is doing a lot of work in that sentence. Under the data-heavy scenario the pessimistic case has the chain ahead of capacity in 36 of the 85 years to 2110, the last of them 2075. A stall would break the result outright rather than merely delay it, and Appendix C.4 keeps one as a separate scenario at 0 to 2%/yr. This paper does not estimate how likely it is.
 
 This separates two kinds of certainty that should not be blurred:
 
@@ -182,9 +182,9 @@ This separates two kinds of certainty that should not be blurred:
 - The **shape of chain growth** is constrained by the current block-weight regime.
 - The **capacity of future $300 hardware** is a forecast, and uncertainty grows with the horizon.
 
-The near-term storage shock makes the present look worse than the long-run base case. It is still evidence that the storage side of the race cannot be assumed away. Kryder's Law already failed as a simple price forecast after HDD cost improvements slowed sharply [\[13\]](#ref-13)[\[14\]](#ref-14)[\[15\]](#ref-15)[\[16\]](#ref-16). NAND has technical room to scale [\[5\]](#ref-5)[\[6\]](#ref-6)[\[7\]](#ref-7), but denser storage does not automatically mean cheaper consumer storage.
+The near-term storage shock makes the present look worse than the long-run base case. It is still evidence that the storage side of the race cannot be assumed away. Kryder's Law already failed as a simple price forecast after HDD cost improvements slowed sharply [\[13\]](#ref-13)[\[14\]](#ref-14)[\[15\]](#ref-15)[\[16\]](#ref-16). NAND has technical room to scale [\[5\]](#ref-5)[\[6\]](#ref-6)[\[7\]](#ref-7)[\[62\]](#ref-62), but denser storage does not automatically mean cheaper consumer storage, and the long-run economics of keeping data are worse than a raw price-per-gigabyte curve suggests [\[68\]](#ref-68)[\[69\]](#ref-69).
 
-Long-range forecasts can also miss technology changes in the other direction. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[66\]](#ref-66)[\[67\]](#ref-67), while forecasting research shows uncertainty widening rapidly with horizon [\[63\]](#ref-63)[\[64\]](#ref-64).
+Long-range forecasts can also miss technology changes in the other direction. Historical datasets spanning tape, disk and flash show much faster improvement than any single technology curve [\[63\]](#ref-63)[\[64\]](#ref-64), and the industry roadmap and research pipeline both carry candidate successors to NAND [\[65\]](#ref-65)[\[66\]](#ref-66)[\[67\]](#ref-67). Forecasting research shows uncertainty widening rapidly with horizon in either direction [\[60\]](#ref-60)[\[61\]](#ref-61).
 
 The detailed storage scenarios and forecast assumptions are retained in Appendix C.
 
@@ -202,7 +202,7 @@ Storage is not the only resource that grows with the chain. Do any of the others
 
 Following the tip needs little bandwidth compared with IBD. Downloading the current 724 GB chain inside seven days requires about **9.6 Mbps**, and even the data-heavy year-10 chain of 2,602 GB requires only **34 Mbps**.
 
-Global median residential broadband is roughly 104 Mbps and has been improving faster than chain growth [\[48\]](#ref-48)[\[59\]](#ref-59). Very slow connections already struggle with IBD, but bandwidth speed is not the first constraint to fail in most current node-hosting regions.
+Global median residential broadband is roughly 104 Mbps and has been improving faster than chain growth [\[44\]](#ref-44)[\[56\]](#ref-56). Very slow connections already struggle with IBD, but bandwidth speed is not the first constraint to fail in most current node-hosting regions.
 
 Bandwidth **cost** is a separate access problem and is treated in Section 6.
 
@@ -216,7 +216,7 @@ On the N100 reference machine, IBD processing tracks chain size more closely tha
 
 The static-hardware ceiling is **112–113 GB/year**. Storage still fails first, but only by a GB or two per year, which is inside the model's own uncertainty about the N100's sustained IBD rate. The two constraints arrive together rather than in sequence.
 
-IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable by loading a validated chainstate snapshot before historical validation finishes [\[44\]](#ref-44). SwiftSync is proposed and could improve IBD further [\[43\]](#ref-43). I treat those as upside rather than requirements for the storage result. Past software optimisation has been important to keeping IBD tractable, and its future rate is uncertain [\[23\]](#ref-23).
+IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable by loading a validated chainstate snapshot before historical validation finishes [\[40\]](#ref-40). SwiftSync is proposed and could improve IBD further [\[39\]](#ref-39). I treat those as upside rather than requirements for the storage result. Past software optimisation has been important to keeping IBD tractable, and its future rate is uncertain [\[23\]](#ref-23).
 
 ### UTXO set and RAM
 
@@ -224,9 +224,9 @@ IBD also has active software mitigations. AssumeUTXO can reduce time-to-usable b
 
 *Log vertical axis. RAM growth leaves the plot long before 2110, which is the point: the chainstate is not the binding constraint. Model: [`models/utxo/`](models/utxo).*
 
-The current chainstate is about 11 GB, close to the amount a 16 GB machine can cache after the operating system takes its share. Once it grows beyond available RAM, more UTXO lookups hit disk. Benchmarks show that this can slow IBD materially, but it is a performance gradient rather than a functional cutoff [\[42\]](#ref-42).
+The current chainstate is about 11 GB, close to the amount a 16 GB machine can cache after the operating system takes its share. Once it grows beyond available RAM, more UTXO lookups hit disk. Benchmarks show that this can slow IBD materially, but it is a performance gradient rather than a functional cutoff [\[38\]](#ref-38).
 
-The UTXO set also has relief mechanisms that archival storage does not. Its size has already fallen from its January 2025 peak, some low-value inscription outputs can be consolidated or cleaned up, and Utreexo proposes replacing the conventional chainstate with a compact accumulator [\[24\]](#ref-24)[\[45\]](#ref-45)[\[46\]](#ref-46)[\[47\]](#ref-47).
+The UTXO set also has relief mechanisms that archival storage does not. Its size has already fallen from its January 2025 peak, some low-value inscription outputs can be consolidated or cleaned up, and Utreexo proposes replacing the conventional chainstate with a compact accumulator [\[24\]](#ref-24)[\[41\]](#ref-41)[\[42\]](#ref-42)[\[43\]](#ref-43).
 
 An adversary can maximise UTXO creation or maximise stored bytes, but not both with the same block construction. Neither path changes storage being the first hard capacity limit in the reference model.
 
@@ -238,13 +238,13 @@ A $300 machine and a seven-day sync target describe only part of the node popula
 
 The metered-bandwidth examples in Appendix C put the difference in scale. At the cited tariffs, a one-time IBD is estimated at about **$2,540 using the Sub-Saharan African regional average**, around **$514 in Nigeria**, and around **$65 in India**. These figures vary enormously by country and tariff and are not part of the four-constraint model.
 
-Independent P2P measurement attributes about **0.3% of reachable Bitcoin nodes to Africa and 1.0% to South America**, or 1.3% combined [\[60\]](#ref-60). The low share predates the inscription-driven increase in block size and reflects broader differences in income, hardware access and connectivity. Chain growth can worsen that exclusion, but it did not create it.
+Independent P2P measurement attributes about **0.3% of reachable Bitcoin nodes to Africa and 1.0% to South America**, or 1.3% combined [\[57\]](#ref-57). The low share predates the inscription-driven increase in block size and reflects broader differences in income, hardware access and connectivity. Chain growth can worsen that exclusion, but it did not create it.
 
 Reachable-node share is also an incomplete decentralisation metric. It omits nodes behind NAT or firewalls, and coercion resistance depends on jurisdictional spread as well as raw count. A small region can contribute more diversity than its node share suggests.
 
-This is why the paper should not jump from hardware arithmetic to a claim that catastrophic centralisation is impossible. The model establishes the resource pressure. It does not estimate how many operators leave at each cost level, how many archival peers the network needs, or what geographic distribution is sufficient.
+This is why the paper should not jump from hardware arithmetic to a claim that catastrophic centralisation is impossible. The model establishes the resource pressure. It does not estimate how many operators leave at each cost level, how many archival peers the network needs [\[54\]](#ref-54), or what geographic distribution is sufficient.
 
-Pruning sharpens that limitation. About 89% of reachable nodes currently advertise archival service and about 11% are pruned [\[61\]](#ref-61). If more operators respond to storage pressure by pruning rather than upgrading, validating-node counts can remain healthy while archival density falls.
+Pruning sharpens that limitation. About 89% of reachable nodes currently advertise archival service and about 11% are pruned [\[58\]](#ref-58). If more operators respond to storage pressure by pruning rather than upgrading, validating-node counts can remain healthy while archival density falls.
 
 The defensible conclusion is therefore about the **shape and severity of the hardware pressure**, not a precise decentralisation threshold. Under current rules, chain growth does not create an ever-accelerating storage requirement. It can still make cheap archival participation harder, especially during a sustained data-heavy period or a storage-market slowdown.
 
@@ -260,7 +260,7 @@ The long-run result is more sensitive to conditions outside the current model:
 
 - **The block-weight regime changes.** A higher limit raises the chain-growth envelope and requires the storage analysis to be rerun.
 - **Cheap storage stops improving.** Linear chain growth still accumulates forever. If capacity per dollar plateaus for long enough, a fixed $300 target eventually loses headroom.
-- **Storage improves differently from the model.** The current 5%, 10% and 15% scenarios are forecasts, not physical laws. The model's decay assumption matters to very long horizons.
+- **Storage improves differently from the model.** The current 5%, 10% and 15% scenarios are forecasts, not physical laws. Over very long horizons what matters most is the floor each one decays to, since a floor above zero decides the eventual outcome on its own.
 - **IBD performance stops improving or regresses.** Processing could overtake storage as the first constraint.
 - **Operators respond differently from the model.** A full disk is treated as an upgrade event, but a real operator may prune or stop instead. Maintenance effort may matter as much as purchase price.
 
@@ -272,9 +272,9 @@ It does not model Lightning capacity, fee-market sustainability, mining centrali
 
 ## 8. Related work
 
-The trade-off between block-space use, validation cost and decentralisation is well recognised [\[53\]](#ref-53)[\[54\]](#ref-54)[\[55\]](#ref-55). This paper asks where that cost begins to bind on cheap modern hardware.
+The trade-off between block-space use, validation cost and decentralisation is well recognised [\[49\]](#ref-49)[\[50\]](#ref-50)[\[51\]](#ref-51). This paper asks where that cost begins to bind on cheap modern hardware.
 
-Gencer et al. [\[59\]](#ref-59) measured Bitcoin and Ethereum decentralisation through bandwidth, latency, geography and mining concentration. Wu's 2014–2025 infrastructure-resilience work [arXiv:2602.14372] looks at network-level health. Croman et al. [FC 2016] framed throughput and bootstrap time as resource constraints in decentralised blockchains. Kiffer et al. [\[60\]](#ref-60) provide the geographic node measurements used here, while Voskuil [\[56\]](#ref-56) states the theoretical trade-off directly: higher validation cost reduces decentralisation.
+Gencer et al. [\[56\]](#ref-56) measured Bitcoin and Ethereum decentralisation through bandwidth, latency, geography and mining concentration. Wu's 2014–2025 infrastructure-resilience work [arXiv:2602.14372] looks at network-level health. Croman et al. [\[53\]](#ref-53) framed throughput and bootstrap time as resource constraints in decentralised blockchains. Kiffer et al. [\[57\]](#ref-57) provide the geographic node measurements used here, while Voskuil [\[52\]](#ref-52) states the theoretical trade-off directly: higher validation cost reduces decentralisation.
 
 The contribution here is narrower: measure the resource burden on a cheap individual node, identify which constraint fails first, and separate the first hardware cycle from the cross-generational trend.
 
@@ -302,24 +302,24 @@ Ranked by evidence type: on-chain measurement, controlled benchmark, observed ma
 
 | Input | Evidence type | Refs | Status |
 |---|---|---|---|
-| Chain size (724 GB, March 2026) | On-chain measurement | [\[25\]](#ref-25), [\[61\]](#ref-61) | Established |
+| Chain size (724 GB, March 2026) | On-chain measurement | [\[25\]](#ref-25), [\[58\]](#ref-58) | Established |
 | Chainstate (11 GB, 169M entries) | On-chain measurement | [\[24\]](#ref-24) | Established |
 | Bytes per UTXO entry (63) | On-chain measurement | [\[24\]](#ref-24) | Established |
-| Block size and inscription impact | On-chain measurement | [\[38\]](#ref-38), [\[39\]](#ref-39), [\[40\]](#ref-40) | Established |
-| OP_RETURN data trends | On-chain measurement | [\[41\]](#ref-41) | Established |
-| UTXO composition and growth | On-chain measurement | [\[24\]](#ref-24), [\[45\]](#ref-45), [\[46\]](#ref-46), [\[47\]](#ref-47) | Established |
-| IBD rate (12 GB/hr, N100) | Controlled benchmark | [\[42\]](#ref-42) | Established |
-| Node density (archival vs pruned) | Network observation | [\[58\]](#ref-58), [\[61\]](#ref-61) | Established |
-| Target hardware ($300) | Observed market data | [\[49\]](#ref-49), [\[50\]](#ref-50) | **Contested (medium)** |
-| Upgrade cycle (10 years) | Market data + inference | [\[50\]](#ref-50), [\[51\]](#ref-51), [\[52\]](#ref-52) | **Contested (medium)** |
-| SSD cost trend and improvement rates | Observed market data | [\[17\]](#ref-17), [\[18\]](#ref-18), [\[19\]](#ref-19), [\[34\]](#ref-34) | Established |
-| SSD price reversal (2023–2026) | Observed market data | [\[4\]](#ref-4), [\[18\]](#ref-18), [\[31\]](#ref-31) | Established |
-| Residential bandwidth trends | Observed market data | [\[48\]](#ref-48) | Established |
+| Block size and inscription impact | On-chain measurement | [\[34\]](#ref-34), [\[35\]](#ref-35), [\[36\]](#ref-36) | Established |
+| OP_RETURN data trends | On-chain measurement | [\[37\]](#ref-37) | Established |
+| UTXO composition and growth | On-chain measurement | [\[24\]](#ref-24), [\[41\]](#ref-41), [\[42\]](#ref-42), [\[43\]](#ref-43) | Established |
+| IBD rate (12 GB/hr, N100) | Controlled benchmark | [\[38\]](#ref-38) | Established |
+| Node density (archival vs pruned) | Network observation | [\[55\]](#ref-55), [\[58\]](#ref-58) | Established |
+| Target hardware ($300) | Observed market data | [\[45\]](#ref-45), [\[46\]](#ref-46) | **Contested (medium)** |
+| Upgrade cycle (10 years) | Market data + inference | [\[46\]](#ref-46), [\[47\]](#ref-47), [\[48\]](#ref-48) | **Contested (medium)** |
+| SSD cost trend and improvement rates | Observed market data | [\[17\]](#ref-17), [\[18\]](#ref-18), [\[19\]](#ref-19), [\[31\]](#ref-31) | Established |
+| SSD price reversal (2023–2026) | Observed market data | [\[4\]](#ref-4), [\[18\]](#ref-18), [\[28\]](#ref-28) | Established |
+| Residential bandwidth trends | Observed market data | [\[44\]](#ref-44) | Established |
 | HDD S-curve deceleration | Market data (historical) | [\[8\]](#ref-8), [\[9\]](#ref-9), [\[10\]](#ref-10), [\[11\]](#ref-11) | Established |
 | Kryder's Law breakdown | Market data (historical) | [\[13\]](#ref-13), [\[14\]](#ref-14), [\[15\]](#ref-15), [\[16\]](#ref-16) | Established |
 | NAND oligopoly coordination | Observed market data | [\[20\]](#ref-20), [\[21\]](#ref-21), [\[22\]](#ref-22) | Established |
 | NAND scaling outlook | Industry forecast | [\[5\]](#ref-5), [\[6\]](#ref-6), [\[7\]](#ref-7), [\[12\]](#ref-12) | Established trend, contested timeline |
-| AI NAND shortage (2025–2028) | Industry forecast | [\[3\]](#ref-3), [\[31\]](#ref-31), [\[32\]](#ref-32), [\[34\]](#ref-34), [\[36\]](#ref-36), [\[37\]](#ref-37) | Established now, contested duration |
+| AI NAND shortage (2025–2028) | Industry forecast | [\[3\]](#ref-3), [\[28\]](#ref-28), [\[29\]](#ref-29), [\[31\]](#ref-31), [\[32\]](#ref-32), [\[33\]](#ref-33) | Established now, contested duration |
 | Metered bandwidth costs | Observed market data | ITU 2024, Cable.co.uk | **Not modelled** |
 
 The 111 GB/year ceiling rests on current measurements and arithmetic. The block-weight regime constrains the shape of sustained chain growth, but the capacity of later $300 hardware remains a forecast. If the storage forecast is wrong, the multi-generation result moves while the first-cycle ceiling does not.
@@ -338,13 +338,16 @@ models/
 │   ├── model.py                storage ceiling
 │   ├── charts.py               80-year cross-generational view
 │   ├── charts_nearterm.py      first-cycle view (fig-storage-nearterm)
-│   └── capacity-overlay.py     probabilistic capacity overlay
+│   ├── storage-outlook-fan.py  cost forecast (fig-storage-outlook)
+│   ├── capacity-overlay.py     probabilistic capacity overlay
+│   ├── build-composite-series.py   rebuilds the price series below
+│   └── composite-storage-series.json   cheapest $/GB per year, 1955-2026
 ├── ibd/       model.py, charts.py
 ├── bandwidth/ model.py, charts.py
 └── utxo/      charts.py
 ```
 
-Every model imports its baselines and scenario rates from `scenarios.py`, so no rate is asserted twice. Run any chart script directly to regenerate its figure into `figures/`. `capacity-overlay.py` produces `fig-storage-capacity-probabilistic.png`, supplementary to the charts embedded above.
+Every model imports its baselines and scenario rates from `scenarios.py`, so no rate is asserted twice. Run any chart script directly to regenerate its figure into `figures/`. The two probabilistic figures share one input, `composite-storage-series.json`, a year-by-year series of the cheapest consumer storage available at the time; `build-composite-series.py` rebuilds it from the sources listed in its header. `capacity-overlay.py` produces `fig-storage-capacity-probabilistic.png`, supplementary to the charts embedded above.
 
 ---
 
@@ -383,7 +386,7 @@ block size = 250 + *N* × (199 + *D*) bytes
 | 50% | 10.5 KB | ~360 | 3.90 MB | 205 GB/yr |
 | 100% (all images) | 21 KB | ~186 | 3.95 MB | 207 GB/yr |
 
-BRC-20 mints stay small even in a block that is full by weight, because transaction overhead is large relative to payload. Images carry enough payload for that overhead to stop mattering, which is why the curve flattens so early. By a 10% image share the block is already within 0.4 MB of the all-image case and within 0.5 MB of the weight-limit maximum. The data-heavy scenario therefore does not depend on picking a mix: any sustained inscription regime lands in much the same place, and arithmetic on the weight limit already supplies the bound above it. Inscription-size evidence is in [\[40\]](#ref-40).
+BRC-20 mints stay small even in a block that is full by weight, because transaction overhead is large relative to payload. Images carry enough payload for that overhead to stop mattering, which is why the curve flattens so early. By a 10% image share the block is already within 0.4 MB of the all-image case and within 0.5 MB of the weight-limit maximum. The data-heavy scenario therefore does not depend on picking a mix: any sustained inscription regime lands in much the same place, and arithmetic on the weight limit already supplies the bound above it. Inscription-size evidence is in [\[36\]](#ref-36).
 
 ### C.2 Storage sensitivity to average block size
 
@@ -440,7 +443,7 @@ Each rate closes 2% of its remaining gap to its floor every year, so improvement
 
 An earlier version of this model decayed every rate toward zero. That was harsher than any published long-range forecast. From year 30 on it put even the optimistic case below the most pessimistic external estimate the model had been checked against, and it made cumulative capacity improvement converge to a finite ceiling whatever rate you started from.
 
-With floors, cumulative improvement in the optimistic and base cases has no ceiling, so linear chain growth is eventually overtaken in both. That follows from assuming a positive floor. Whether improvement really settles at one is what the stall scenario below denies, and this paper does not measure it.
+All three floors here are above zero, so cumulative improvement in all three cases has no ceiling and linear chain growth is eventually overtaken in each. That follows from assuming a positive floor rather than from anything the model measures. What the three cases differ in is how long the chain stays ahead on the way there: at the 188 GB/year data-heavy rate, four of the next 85 years in the base and optimistic cases, thirty-six of them in the pessimistic case. Whether improvement really settles at a floor is what the stall scenario below denies, and this paper does not measure it.
 
 The original forecast communication scenarios are retained below. The probabilities are informed estimates, not model output.
 
@@ -541,84 +544,86 @@ These figures are not part of the four-constraint model. They illustrate why ade
 
 <a id="ref-27"></a>[27] Bitcoin Developer Documentation. "Block Chain: proof of work and difficulty adjustment." https://developer.bitcoin.org/devguide/block_chain.html
 
-<a id="ref-31"></a>[31] Tom's Hardware. "Phison CEO confirms NAND prices have more than doubled." January 2026. https://www.tomshardware.com/pc-components/ssds/phison-ceo-confirms-nand-prices-have-more-than-doubled-and-will-continue-to-rise-all-2026-production-already-sold-out-ssds-facing-pricing-apocalypse-throughout-2027
+<a id="ref-28"></a>[28] Tom's Hardware. "Phison CEO confirms NAND prices have more than doubled." January 2026. https://www.tomshardware.com/pc-components/ssds/phison-ceo-confirms-nand-prices-have-more-than-doubled-and-will-continue-to-rise-all-2026-production-already-sold-out-ssds-facing-pricing-apocalypse-throughout-2027
 
-<a id="ref-32"></a>[32] Tom's Hardware. "Phison CEO claims NAND shortage could last a staggering 10 years." https://www.tomshardware.com/pc-components/ssds/phison-ceo-claims-nand-shortage-could-last-a-staggering-10-years-says-memory-supercycle-imminent-and-severe-2026-shortages-are-at-hand
+<a id="ref-29"></a>[29] Tom's Hardware. "Phison CEO claims NAND shortage could last a staggering 10 years." https://www.tomshardware.com/pc-components/ssds/phison-ceo-claims-nand-shortage-could-last-a-staggering-10-years-says-memory-supercycle-imminent-and-severe-2026-shortages-are-at-hand
 
-<a id="ref-33"></a>[33] Oreton Storage. "Global NAND Supply Update Q4 2025." https://oretonstorage.com/blog/global-nand-supply-update-q4-2025-whats-shaping-ssd-prices-ahead
+<a id="ref-30"></a>[30] Oreton Storage. "Global NAND Supply Update Q4 2025." https://oretonstorage.com/blog/global-nand-supply-update-q4-2025-whats-shaping-ssd-prices-ahead
 
-<a id="ref-34"></a>[34] IDC. "Global Memory Shortage Crisis: Market Analysis." 2026. https://www.idc.com/resource-center/blog/global-memory-shortage-crisis-market-analysis-and-the-potential-impact-on-the-smartphone-and-pc-markets-in-2026/
+<a id="ref-31"></a>[31] IDC. "Global Memory Shortage Crisis: Market Analysis." 2026. https://www.idc.com/resource-center/blog/global-memory-shortage-crisis-market-analysis-and-the-potential-impact-on-the-smartphone-and-pc-markets-in-2026/
 
-<a id="ref-36"></a>[36] OSCOO. "Will SSD Prices Drop in 2026?" https://www.oscoo.com/news/will-ssd-prices-drop-in-2026/
+<a id="ref-32"></a>[32] OSCOO. "Will SSD Prices Drop in 2026?" https://www.oscoo.com/news/will-ssd-prices-drop-in-2026/
 
-<a id="ref-37"></a>[37] NAND Research. "Memory Flash Crisis Update, March 2026." https://nand-research.com/memory-flash-crisisc-update-march-2026/
+<a id="ref-33"></a>[33] NAND Research. "Memory Flash Crisis Update, March 2026." https://nand-research.com/memory-flash-crisisc-update-march-2026/
 
-<a id="ref-38"></a>[38] JBBA. "Bitcoin Ordinals and Inscriptions: An Analysis of Bitcoin's Evolving Network Dynamics." 2024. https://jbba.scholasticahq.com/api/v1/articles/153840-bitcoin-ordinals-and-inscriptions-an-analysis-of-bitcoin-s-evolving-network-dynamics.pdf
+<a id="ref-34"></a>[34] JBBA. "Bitcoin Ordinals and Inscriptions: An Analysis of Bitcoin's Evolving Network Dynamics." 2024. https://jbba.scholasticahq.com/api/v1/articles/153840-bitcoin-ordinals-and-inscriptions-an-analysis-of-bitcoin-s-evolving-network-dynamics.pdf
 
-<a id="ref-39"></a>[39] ScienceDirect. "Bitcoin Ordinals: Determinants and impact on total transaction fees." 2024. https://www.sciencedirect.com/science/article/abs/pii/S0275531924001314
+<a id="ref-35"></a>[35] ScienceDirect. "Bitcoin Ordinals: Determinants and impact on total transaction fees." 2024. https://www.sciencedirect.com/science/article/abs/pii/S0275531924001314
 
-<a id="ref-40"></a>[40] CryptoSlate. "Data on Taproot Ordinals points to higher Bitcoin fees, chain bloat." 2023. https://cryptoslate.com/data-on-taproot-ordinals-points-to-higher-bitcoin-fees-chain-bloat/
+<a id="ref-36"></a>[36] CryptoSlate. "Data on Taproot Ordinals points to higher Bitcoin fees, chain bloat." 2023. https://cryptoslate.com/data-on-taproot-ordinals-points-to-higher-bitcoin-fees-chain-bloat/
 
-<a id="ref-41"></a>[41] CoinDesk. "Bitcoin Core 30 to Increase OP_RETURN Data Limit." 2025. https://www.coindesk.com/tech/2025/06/10/bitcoin-core-30-to-increase-op_return-data-limit-after-developer-debate-concludes
+<a id="ref-37"></a>[37] CoinDesk. "Bitcoin Core 30 to Increase OP_RETURN Data Limit." 2025. https://www.coindesk.com/tech/2025/06/10/bitcoin-core-30-to-increase-op_return-data-limit-after-developer-debate-concludes
 
-<a id="ref-42"></a>[42] Lopp, J. "2025 Bitcoin Node Performance Tests." https://blog.lopp.net/2025-bitcoin-node-performance-tests/
+<a id="ref-38"></a>[38] Lopp, J. "2025 Bitcoin Node Performance Tests." https://blog.lopp.net/2025-bitcoin-node-performance-tests/
 
-<a id="ref-43"></a>[43] Somsen, R. "SwiftSync: Speeding Up IBD with Pre-generated Hints." Delving Bitcoin, 2025. https://delvingbitcoin.org/t/swiftsync-speeding-up-ibd-with-pre-generated-hints-poc/1562
+<a id="ref-39"></a>[39] Somsen, R. "SwiftSync: Speeding Up IBD with Pre-generated Hints." Delving Bitcoin, 2025. https://delvingbitcoin.org/t/swiftsync-speeding-up-ibd-with-pre-generated-hints-poc/1562
 
-<a id="ref-44"></a>[44] Bitcoin Optech. "AssumeUTXO." https://bitcoinops.org/en/topics/assumeutxo/
+<a id="ref-40"></a>[40] Bitcoin Optech. "AssumeUTXO." https://bitcoinops.org/en/topics/assumeutxo/
 
-<a id="ref-45"></a>[45] Dryja, T. "Utreexo: A dynamic hash-based accumulator optimized for the Bitcoin UTXO set." ePrint 2019/611. https://eprint.iacr.org/2019/611.pdf
+<a id="ref-41"></a>[41] Dryja, T. "Utreexo: A dynamic hash-based accumulator optimized for the Bitcoin UTXO set." ePrint 2019/611. https://eprint.iacr.org/2019/611.pdf
 
-<a id="ref-46"></a>[46] Bitcoin Magazine. "Bitcoin's Growing UTXO Problem and How Utreexo Can Help Solve It." https://bitcoinmagazine.com/technical/bitcoins-growing-utxo-problem-and-how-utreexo-can-help-solve-it
+<a id="ref-42"></a>[42] Bitcoin Magazine. "Bitcoin's Growing UTXO Problem and How Utreexo Can Help Solve It." https://bitcoinmagazine.com/technical/bitcoins-growing-utxo-problem-and-how-utreexo-can-help-solve-it
 
-<a id="ref-47"></a>[47] IEEE GLOBECOM. "Prediction-based UTXO Cache Optimization for Bitcoin Lightweight Full Nodes." 2021. https://ieeexplore.ieee.org/document/9685843/
+<a id="ref-43"></a>[43] IEEE GLOBECOM. "Prediction-based UTXO Cache Optimization for Bitcoin Lightweight Full Nodes." 2021. https://ieeexplore.ieee.org/document/9685843/
 
-<a id="ref-48"></a>[48] Lopp, J. "Revisiting Bitcoin Network Bandwidth Issues." 2023. https://blog.lopp.net/revisiting-bitcoin-network-bandwidth-issues/
+<a id="ref-44"></a>[44] Lopp, J. "Revisiting Bitcoin Network Bandwidth Issues." 2023. https://blog.lopp.net/revisiting-bitcoin-network-bandwidth-issues/
 
-<a id="ref-49"></a>[49] Athena Alpha. "Best Bitcoin Node Hardware." 2024. https://www.athena-alpha.com/bitcoin-node-hardware/
+<a id="ref-45"></a>[45] Athena Alpha. "Best Bitcoin Node Hardware." 2024. https://www.athena-alpha.com/bitcoin-node-hardware/
 
-<a id="ref-50"></a>[50] Start9 Community. "Raspberry Pi no longer recommended for use with Bitcoin stack." https://community.start9.com/t/raspberry-pi-no-longer-recommended-for-use-with-bitcoin-stack/779
+<a id="ref-46"></a>[46] Start9 Community. "Raspberry Pi no longer recommended for use with Bitcoin stack." https://community.start9.com/t/raspberry-pi-no-longer-recommended-for-use-with-bitcoin-stack/779
 
-<a id="ref-51"></a>[51] Stacker News. "Nobody should suggest using a Raspberry Pi for running a Bitcoin node in 2023." https://stacker.news/items/186832
+<a id="ref-47"></a>[47] Stacker News. "Nobody should suggest using a Raspberry Pi for running a Bitcoin node in 2023." https://stacker.news/items/186832
 
-<a id="ref-52"></a>[52] The Bitcoin Manual. "Migrating BTC Pi Node." https://thebitcoinmanual.com/articles/migrating-btc-pi-node/
+<a id="ref-48"></a>[48] The Bitcoin Manual. "Migrating BTC Pi Node." https://thebitcoinmanual.com/articles/migrating-btc-pi-node/
 
-<a id="ref-53"></a>[53] Lopp, J. "A Treatise on Bitcoin Block Space Economics." 2024. https://blog.lopp.net/treatise-bitcoin-block-space-economics/
+<a id="ref-49"></a>[49] Lopp, J. "A Treatise on Bitcoin Block Space Economics." 2024. https://blog.lopp.net/treatise-bitcoin-block-space-economics/
 
-<a id="ref-54"></a>[54] Buterin, V. "Some reflections on the Bitcoin block size war." May 2024. https://vitalik.eth.limo/general/2024/05/31/blocksize.html
+<a id="ref-50"></a>[50] Buterin, V. "Some reflections on the Bitcoin block size war." May 2024. https://vitalik.eth.limo/general/2024/05/31/blocksize.html
 
-<a id="ref-55"></a>[55] Blockonomi. "Full Nodes & Block Size: Keeping Validation Costs Low." https://blockonomi.com/full-nodes-block-size-keeping-validation-costs-low-in-bitcoin/
+<a id="ref-51"></a>[51] Blockonomi. "Full Nodes & Block Size: Keeping Validation Costs Low." https://blockonomi.com/full-nodes-block-size-keeping-validation-costs-low-in-bitcoin/
 
-<a id="ref-56"></a>[56] Voskuil, E. "Scalability Principle." Cryptoeconomics, libbitcoin wiki. https://github.com/libbitcoin/libbitcoin-system/wiki/Scalability-Principle
+<a id="ref-52"></a>[52] Voskuil, E. "Scalability Principle." Cryptoeconomics, libbitcoin wiki. https://github.com/libbitcoin/libbitcoin-system/wiki/Scalability-Principle
 
-<a id="ref-57"></a>[57] "The Redundancy of Full Nodes in Bitcoin." arXiv:2506.14197. June 2025. https://arxiv.org/abs/2506.14197
+<a id="ref-53"></a>[53] Croman, K., Decker, C., Eyal, I., Gencer, A.E., Juels, A., Kosba, A., Miller, A., Saxena, P., Shi, E., Sirer, E.G., Song, D., Wattenhofer, R. "On Scaling Decentralized Blockchains." Financial Cryptography and Data Security 2016, LNCS 9604. https://doi.org/10.1007/978-3-662-53357-4_8
 
-<a id="ref-58"></a>[58] D-Central. "Understanding the Role of Archival and Pruned Nodes in the Decentralization of Bitcoin." https://d-central.tech/understanding-the-role-of-archival-and-pruned-nodes-in-the-decentralization-of-bitcoin/
+<a id="ref-54"></a>[54] "The Redundancy of Full Nodes in Bitcoin." arXiv:2506.14197. June 2025. https://arxiv.org/abs/2506.14197
 
-<a id="ref-59"></a>[59] Gencer, A.E., Basu, S., Eyal, I., van Renesse, R., Sirer, E.G. "Decentralization in Bitcoin and Ethereum Networks." FC 2018. arXiv:1801.03998. https://arxiv.org/abs/1801.03998
+<a id="ref-55"></a>[55] D-Central. "Understanding the Role of Archival and Pruned Nodes in the Decentralization of Bitcoin." https://d-central.tech/understanding-the-role-of-archival-and-pruned-nodes-in-the-decentralization-of-bitcoin/
 
-<a id="ref-60"></a>[60] Kiffer, L., Salman, A., Levin, D., Mislove, A., Nita-Rotaru, C. "36 Coins: Measuring P2P Network Structure and Health." SIGMETRICS 2026. arXiv:2511.15388. https://arxiv.org/abs/2511.15388
+<a id="ref-56"></a>[56] Gencer, A.E., Basu, S., Eyal, I., van Renesse, R., Sirer, E.G. "Decentralization in Bitcoin and Ethereum Networks." FC 2018. arXiv:1801.03998. https://arxiv.org/abs/1801.03998
 
-<a id="ref-61"></a>[61] Bitnodes. "Reachable Bitcoin Nodes." Snapshot March 2026. https://bitnodes.io/nodes/
+<a id="ref-57"></a>[57] Kiffer, L., Salman, A., Levin, D., Mislove, A., Nita-Rotaru, C. "36 Coins: Measuring P2P Network Structure and Health." SIGMETRICS 2026. arXiv:2511.15388. https://arxiv.org/abs/2511.15388
 
-<a id="ref-62"></a>[62] Kadhe, S., Chung, J., Ramchandran, K. "SeF: A Secure Fountain Architecture for Slashing Storage Costs in Blockchains." arXiv:1906.12140. 2019. https://arxiv.org/abs/1906.12140
+<a id="ref-58"></a>[58] Bitnodes. "Reachable Bitcoin Nodes." Snapshot March 2026. https://bitnodes.io/nodes/
 
-<a id="ref-63"></a>[63] Nagy, J.B., Farmer, J.D., Bui, Q.M., Trancik, J.E. "Statistical Basis for Predicting Technological Progress." PLoS ONE 8(2): e52669, 2013. https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0052669
+<a id="ref-59"></a>[59] Kadhe, S., Chung, J., Ramchandran, K. "SeF: A Secure Fountain Architecture for Slashing Storage Costs in Blockchains." arXiv:1906.12140. 2019. https://arxiv.org/abs/1906.12140
 
-<a id="ref-64"></a>[64] Lafond, F., Bailey, A.G., Bakker, J.D., Rebois, D., Zadourian, R., McSharry, P., Farmer, J.D. "How Well Do Experience Curves Predict Technological Progress? A Method for Making Distributional Forecasts." Technological Forecasting and Social Change 128: 104-117, 2018. https://arxiv.org/abs/1703.05979
+<a id="ref-60"></a>[60] Nagy, J.B., Farmer, J.D., Bui, Q.M., Trancik, J.E. "Statistical Basis for Predicting Technological Progress." PLoS ONE 8(2): e52669, 2013. https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0052669
 
-<a id="ref-65"></a>[65] Floyer, D. "SSDs Will Crush Hard Drives." Wikibon / Blocks & Files, January 2021. https://blocksandfiles.com/2021/01/25/wikibon-ssds-vs-hard-drives-wrights-law/
+<a id="ref-61"></a>[61] Lafond, F., Bailey, A.G., Bakker, J.D., Rebois, D., Zadourian, R., McSharry, P., Farmer, J.D. "How Well Do Experience Curves Predict Technological Progress? A Method for Making Distributional Forecasts." Technological Forecasting and Social Change 128: 104-117, 2018. https://arxiv.org/abs/1703.05979
 
-<a id="ref-66"></a>[66] Kurzweil, R. "The Singularity Is Near: When Humans Transcend Biology." Viking, 2005.
+<a id="ref-62"></a>[62] Floyer, D. "SSDs Will Crush Hard Drives." Wikibon / Blocks & Files, January 2021. https://blocksandfiles.com/2021/01/25/wikibon-ssds-vs-hard-drives-wrights-law/
 
-<a id="ref-67"></a>[67] McCallum, J.C. "Disk Drive Prices (1955-2024)." https://jcmit.net/diskprice.htm
+<a id="ref-63"></a>[63] Kurzweil, R. "The Singularity Is Near: When Humans Transcend Biology." Viking, 2005.
 
-<a id="ref-68"></a>[68] IEEE International Roadmap for Devices and Systems. "Mass Data Storage." 2023. https://irds.ieee.org/images/files/pdf/2023/2023IRDS_MDS.pdf
+<a id="ref-64"></a>[64] McCallum, J.C. "Disk Drive Prices (1955-2024)." https://jcmit.net/diskprice.htm
 
-<a id="ref-69"></a>[69] DNA Data Storage Alliance (SNIA). "DNA Data Storage Technology Landscape." 2025.
+<a id="ref-65"></a>[65] IEEE International Roadmap for Devices and Systems. "Mass Data Storage." 2023. https://irds.ieee.org/images/files/pdf/2023/2023IRDS_MDS.pdf
 
-<a id="ref-70"></a>[70] Microsoft Research. "Project Silica: Storing Data in Glass." Nature, February 2026. doi: 10.1038/s41586-025-10042-w
+<a id="ref-66"></a>[66] DNA Data Storage Alliance (SNIA). "DNA Data Storage Technology Landscape." 2025.
 
-<a id="ref-71"></a>[71] Rosenthal, D. "Archival Storage." DSHR's Blog, March 2025. https://blog.dshr.org/2025/03/archival-storage.html
+<a id="ref-67"></a>[67] Microsoft Research. "Project Silica: Storing Data in Glass." Nature, February 2026. doi: 10.1038/s41586-025-10042-w
 
-<a id="ref-72"></a>[72] Rosenthal, D. "An Economic Model of Long-Term Digital Storage." UNESCO Memory of the World Conference, 2012. https://www.fsl.cs.sunysb.edu/docs/unesco12/UNESCO2012-storage-econ.pdf
+<a id="ref-68"></a>[68] Rosenthal, D. "Archival Storage." DSHR's Blog, March 2025. https://blog.dshr.org/2025/03/archival-storage.html
+
+<a id="ref-69"></a>[69] Rosenthal, D. "An Economic Model of Long-Term Digital Storage." UNESCO Memory of the World Conference, 2012. https://www.fsl.cs.sunysb.edu/docs/unesco12/UNESCO2012-storage-econ.pdf

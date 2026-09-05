@@ -38,10 +38,7 @@ CHAIN_HISTORY = {
 
 # ── Load data & fit AR(1) ────────────────────────────────────────────
 
-# NOTE: this reads a data file that lives in the private bitcoinx repo, so the
-# published repo is not self-contained for this figure. See ticket 043.
-data_path = Path(__file__).resolve().parents[5] / \
-    'models' / 'storage' / 'composite-storage-series.json'
+data_path = Path(__file__).parent / 'composite-storage-series.json'
 
 with open(data_path) as f:
     raw = json.load(f)

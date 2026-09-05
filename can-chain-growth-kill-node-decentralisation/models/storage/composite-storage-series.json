@@ -1,0 +1,394 @@
+[
+  {
+    "year": 1955,
+    "hdd_per_gb": 6233330.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 6233330.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1960,
+    "hdd_per_gb": 3600000,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 3600000,
+    "tech": "HDD"
+  },
+  {
+    "year": 1964,
+    "hdd_per_gb": 3518620.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 3518620.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1966,
+    "hdd_per_gb": 1047260.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 1047260.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1970,
+    "hdd_per_gb": 259700.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 259700.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1973,
+    "hdd_per_gb": 2550000,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 2550000,
+    "tech": "HDD"
+  },
+  {
+    "year": 1974,
+    "hdd_per_gb": 185000,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 185000,
+    "tech": "HDD"
+  },
+  {
+    "year": 1975,
+    "hdd_per_gb": 11377780.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 11377780.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1979,
+    "hdd_per_gb": 3009420.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 3009420.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1980,
+    "hdd_per_gb": 3488630.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 3488630.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1981,
+    "hdd_per_gb": 1020830.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 1020830.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1982,
+    "hdd_per_gb": 289210.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 289210.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1983,
+    "hdd_per_gb": 319000,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 319000,
+    "tech": "HDD"
+  },
+  {
+    "year": 1984,
+    "hdd_per_gb": 566040.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 566040.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1985,
+    "hdd_per_gb": 31390.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 31390.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1986,
+    "hdd_per_gb": 24450.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 24450.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1987,
+    "hdd_per_gb": 14970.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 14970.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1988,
+    "hdd_per_gb": 9970.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 9970.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1989,
+    "hdd_per_gb": 7480.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 7480.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1990,
+    "hdd_per_gb": 3270.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 3270.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1991,
+    "hdd_per_gb": 2790.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 2790.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1992,
+    "hdd_per_gb": 1400.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 1400.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1993,
+    "hdd_per_gb": 718.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 718.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1994,
+    "hdd_per_gb": 433.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 433.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1995,
+    "hdd_per_gb": 214.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 214.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1996,
+    "hdd_per_gb": 128.0,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 128.0,
+    "tech": "HDD"
+  },
+  {
+    "year": 1997,
+    "hdd_per_gb": 48.4,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 48.4,
+    "tech": "HDD"
+  },
+  {
+    "year": 1998,
+    "hdd_per_gb": 24.8,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 24.8,
+    "tech": "HDD"
+  },
+  {
+    "year": 1999,
+    "hdd_per_gb": 8.8,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 8.8,
+    "tech": "HDD"
+  },
+  {
+    "year": 2000,
+    "hdd_per_gb": 4.069999999999999,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 4.069999999999999,
+    "tech": "HDD"
+  },
+  {
+    "year": 2001,
+    "hdd_per_gb": 2.59,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 2.59,
+    "tech": "HDD"
+  },
+  {
+    "year": 2002,
+    "hdd_per_gb": 1.22,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 1.22,
+    "tech": "HDD"
+  },
+  {
+    "year": 2003,
+    "hdd_per_gb": 1.06,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 1.06,
+    "tech": "HDD"
+  },
+  {
+    "year": 2004,
+    "hdd_per_gb": 0.609,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.609,
+    "tech": "HDD"
+  },
+  {
+    "year": 2005,
+    "hdd_per_gb": 0.406,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.406,
+    "tech": "HDD"
+  },
+  {
+    "year": 2006,
+    "hdd_per_gb": 0.219,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.219,
+    "tech": "HDD"
+  },
+  {
+    "year": 2007,
+    "hdd_per_gb": 0.2,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.2,
+    "tech": "HDD"
+  },
+  {
+    "year": 2008,
+    "hdd_per_gb": 0.1,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.1,
+    "tech": "HDD"
+  },
+  {
+    "year": 2009,
+    "hdd_per_gb": 0.06999999999999999,
+    "ssd_per_gb": null,
+    "cheapest_per_gb": 0.06999999999999999,
+    "tech": "HDD"
+  },
+  {
+    "year": 2010,
+    "hdd_per_gb": 0.045000000000000005,
+    "ssd_per_gb": 1.4,
+    "cheapest_per_gb": 0.045000000000000005,
+    "tech": "HDD"
+  },
+  {
+    "year": 2011,
+    "hdd_per_gb": 0.036699999999999997,
+    "ssd_per_gb": 2.0,
+    "cheapest_per_gb": 0.036699999999999997,
+    "tech": "HDD"
+  },
+  {
+    "year": 2012,
+    "hdd_per_gb": 0.05,
+    "ssd_per_gb": 1.0,
+    "cheapest_per_gb": 0.05,
+    "tech": "HDD"
+  },
+  {
+    "year": 2013,
+    "hdd_per_gb": 0.04,
+    "ssd_per_gb": 0.73,
+    "cheapest_per_gb": 0.04,
+    "tech": "HDD"
+  },
+  {
+    "year": 2014,
+    "hdd_per_gb": 0.034999999999999996,
+    "ssd_per_gb": 0.4,
+    "cheapest_per_gb": 0.034999999999999996,
+    "tech": "HDD"
+  },
+  {
+    "year": 2015,
+    "hdd_per_gb": 0.0279,
+    "ssd_per_gb": 0.38,
+    "cheapest_per_gb": 0.0279,
+    "tech": "HDD"
+  },
+  {
+    "year": 2016,
+    "hdd_per_gb": 0.0277,
+    "ssd_per_gb": 0.25,
+    "cheapest_per_gb": 0.0277,
+    "tech": "HDD"
+  },
+  {
+    "year": 2017,
+    "hdd_per_gb": 0.025,
+    "ssd_per_gb": 0.3,
+    "cheapest_per_gb": 0.025,
+    "tech": "HDD"
+  },
+  {
+    "year": 2018,
+    "hdd_per_gb": 0.028,
+    "ssd_per_gb": 0.24,
+    "cheapest_per_gb": 0.028,
+    "tech": "HDD"
+  },
+  {
+    "year": 2019,
+    "hdd_per_gb": 0.024,
+    "ssd_per_gb": 0.15,
+    "cheapest_per_gb": 0.024,
+    "tech": "HDD"
+  },
+  {
+    "year": 2020,
+    "hdd_per_gb": 0.02,
+    "ssd_per_gb": 0.11,
+    "cheapest_per_gb": 0.02,
+    "tech": "HDD"
+  },
+  {
+    "year": 2021,
+    "hdd_per_gb": 0.017,
+    "ssd_per_gb": 0.13,
+    "cheapest_per_gb": 0.017,
+    "tech": "HDD"
+  },
+  {
+    "year": 2022,
+    "hdd_per_gb": 0.014,
+    "ssd_per_gb": 0.09,
+    "cheapest_per_gb": 0.014,
+    "tech": "HDD"
+  },
+  {
+    "year": 2023,
+    "hdd_per_gb": 0.015,
+    "ssd_per_gb": 0.05,
+    "cheapest_per_gb": 0.015,
+    "tech": "HDD"
+  },
+  {
+    "year": 2024,
+    "hdd_per_gb": 0.016,
+    "ssd_per_gb": 0.08,
+    "cheapest_per_gb": 0.016,
+    "tech": "HDD"
+  },
+  {
+    "year": 2025,
+    "hdd_per_gb": 0.017,
+    "ssd_per_gb": 0.09,
+    "cheapest_per_gb": 0.017,
+    "tech": "HDD"
+  },
+  {
+    "year": 2026,
+    "hdd_per_gb": 0.018,
+    "ssd_per_gb": 0.11,
+    "cheapest_per_gb": 0.018,
+    "tech": "HDD"
+  }
+]

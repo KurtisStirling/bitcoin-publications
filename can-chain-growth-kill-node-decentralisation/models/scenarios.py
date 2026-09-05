@@ -307,6 +307,24 @@ def required_disk_sequence(gb_per_year: float, purchases: int = 4,
     return out
 
 
+def years_chain_ahead(case: str, gb_per_year: float, horizon: int = 84):
+    """
+    (years the chain is ahead of capacity, horizon, last such year) for one
+    storage scenario, counting from 2026.
+
+    With floors every case eventually pulls clear of linear growth, so "does
+    capacity win" stops being the interesting question and "for how long does
+    it lose" starts being it. That is what this counts.
+    """
+    ahead = [
+        2026 + y
+        for y in range(horizon + 1)
+        if (CHAIN_GB_2026 + CHAINSTATE_GB_2025 + gb_per_year * y) / 1000
+        > hw_capacity_tb(case, y)
+    ]
+    return len(ahead), horizon + 1, (max(ahead) if ahead else None)
+
+
 def hw_label(case: str) -> str:
     """Chart label for a storage scenario, derived from its own rates."""
     s = HW_IMPROVEMENT[case]
